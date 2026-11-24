@@ -25,6 +25,11 @@ user/consumed/expires) and `FailedLogin` (user_id, created_at, ip). Migration.
   Password: 5 failures in 15 min → 429 `locked`; success clears failures. Wrong method → 400
   `method_mismatch`; wrong credentials → 400 `invalid_credentials`. Success: `last_login_at`, session
   issued (cookie) and body `{"access_token", "user", "is_new"}` (`is_new` = no first and last name).
+- 401 answers carry `WWW-Authenticate: Bearer`.
+- `/refresh` failures clear the cookie only when the session really ended (unknown, expired, revoked
+  family); a refusal inside the reuse grace window keeps the cookie (another tab just replaced it).
+- `/logout` with an already-rotated token revokes its family.
+- Reuse events (family revoked) logged without personal data (user id and family only).
 - `POST /refresh` (cookie) → `{"access_token", "user"}`; `POST /logout` → 204, revokes and clears cookie.
 - `GET /me`, `PATCH /me` (first_name, last_name non-blank, language, theme).
 - `POST /change-password {current_password, new_password}`; for OTP users without a password,

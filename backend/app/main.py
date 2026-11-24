@@ -7,12 +7,15 @@ from fastapi import FastAPI
 
 from app import health
 from app.core.config import get_settings
-from app.core.db import get_engine
+from app.core.db import get_engine, get_sessionmaker
 from app.core.errors import register_error_handlers
+from app.users.bootstrap import ensure_admin
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    async with get_sessionmaker()() as db:
+        await ensure_admin(db)
     yield
     # Close pooled database connections on shutdown.
     await get_engine().dispose()

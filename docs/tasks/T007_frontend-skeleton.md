@@ -19,7 +19,10 @@ service in the dev compose (port 15173, `/api` proxied to the backend). npm scri
 
 ## Step 2 — Core modules
 - `src/api/client.js`: fetch wrapper; access token kept in memory; on 401 one shared `POST /api/auth/refresh`
-  (cookie) then a single retry; refresh failure → clear session and go to `/login`; errors thrown as
+  (cookie) then a single retry; when the refresh itself answers 401, retry it once after a short
+  delay (another tab may have just rotated the cookie: the backend refuses the old token for 10 s
+  without ending the session), and coordinate tabs with a Web Locks / BroadcastChannel lock so only
+  one tab refreshes at a time; refresh failure → clear session and go to `/login`; errors thrown as
   `ApiError(status, code, message)` from the `{"error": {...}}` envelope.
 - `src/i18n/`: en/es/gl JSON, fallback en, detection localStorage → navigator.
 - `src/theme/`: `data-theme` on `<html>` (absent for `system`), CSS custom properties for both themes,

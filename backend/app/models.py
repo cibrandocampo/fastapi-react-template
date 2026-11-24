@@ -2,3 +2,6 @@
 
 Add each new models module here.
 """
+
+from app.auth import models as auth_models  # noqa: F401
+from app.users import models as users_models  # noqa: F401

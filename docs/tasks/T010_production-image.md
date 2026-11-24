@@ -14,7 +14,8 @@ with `--require-hashes`, copies the backend and the dist; non-root user; entrypo
 FastAPI serves `/assets` statically and every non-`/api` path with `index.html` (SPA fallback),
 with cache headers (hashed assets immutable, index no-cache) and security headers
 (CSP without inline scripts, X-Content-Type-Options, Referrer-Policy, frame-ancestors none).
-Refuses to start in production with the default `SECRET_KEY`.
+Refuses to start in production with the default `SECRET_KEY` or one shorter than 32 bytes.
+Logging configured for the app's own loggers (level from `LOG_LEVEL`), without personal data.
 Unhandled exceptions are logged and answered as 500 with the error envelope
 (`internal_error`, no details leaked); tested.
 
