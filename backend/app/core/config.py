@@ -24,6 +24,19 @@ class Settings(BaseSettings):
     cookie_secure: bool = True  # false only for deployments served over plain HTTP
     bcrypt_rounds: int = 12
 
+    # Public address of the app, used in emails
+    site_url: str = "http://localhost:15173"
+
+    # Email
+    email_backend: Literal["smtp", "memory"] = "smtp"
+    email_from: str = "App <no-reply@example.com>"
+    smtp_host: str = "localhost"
+    smtp_port: int = 587
+    smtp_user: str | None = None
+    smtp_password: str | None = None
+    smtp_tls: Literal["none", "starttls", "ssl"] = "starttls"
+    smtp_timeout_seconds: float = 10
+
     # First administrator, created at start-up when no admin exists
     admin_email: str | None = None
     admin_password: str | None = None
