@@ -15,6 +15,8 @@ FastAPI serves `/assets` statically and every non-`/api` path with `index.html` 
 with cache headers (hashed assets immutable, index no-cache) and security headers
 (CSP without inline scripts, X-Content-Type-Options, Referrer-Policy, frame-ancestors none).
 Refuses to start in production with the default `SECRET_KEY`.
+Unhandled exceptions are logged and answered as 500 with the error envelope
+(`internal_error`, no details leaked); tested.
 
 ## Step 2 — Compose and config
 `docker-compose.yml`: `app` (image `${DOCKER_IMAGE}:${APP_TAG:-stable}`, port `${APP_PORT:-8000}`,

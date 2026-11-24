@@ -1,17 +1,62 @@
-# Template — replace with your project's actual services and images.
-# See CLAUDE.md §8 for port conventions and §9 for Docker-first rules.
+# Development stack: local builds, bind mounts, live reload.
+# Run through the Makefile (`make dev-up`), which passes --env-file .env from the repository root.
+# Host ports are prefixed with 1 (CLAUDE.md §8).
+
+name: ${PROJECT_NAME:-app}-dev
 
 services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./db-init.sql:/docker-entrypoint-initdb.d/10-test-db.sql:ro
+    ports:
+      - "15432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:v1.34
+    ports:
+      - "11025:1025"
+      - "18025:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   backend:
-    image: alpine
-    command: sh -c "echo 'backend placeholder' && sleep infinity"
+    build:
+      context: ..
+      dockerfile: dev/Dockerfile.backend
     env_file: ../.env
+    environment:
+      ENV: development
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      TEST_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/app_test
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    volumes:
+      - ../backend:/app
     ports:
       - "18000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
-  frontend:
-    image: alpine
-    command: sh -c "echo 'frontend placeholder' && sleep infinity"
-    env_file: ../.env
-    ports:
-      - "15173:5173"
+volumes:
+  db-data:
