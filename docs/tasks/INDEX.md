@@ -5,7 +5,7 @@ Plan: [docs/plans/template-base.md](../plans/template-base.md) · Branch: `feat/
 
 | ID | Title | Depends on | Status | QA |
 |----|-------|------------|--------|----|
-| T001 | Claude Code workflow | — | Pending | — |
+| T001 | Claude Code workflow | — | Completed | Approved |
 | T002 | Backend skeleton and dev environment | T001 | Pending | — |
 | T003 | Users, roles and sessions | T002 | Pending | — |
 | T004 | Transactional emails | T002 | Pending | — |

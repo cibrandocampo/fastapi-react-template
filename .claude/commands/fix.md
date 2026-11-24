@@ -1,49 +1,20 @@
 ---
-description: Quick fix — implement a focused bug fix or small change without full dev pipeline
-argument-hint: <description of what to fix>
+description: Quick fix — focused bug fix or small change on its own branch, verified and sent as a PR
+argument-hint: <what to fix>
 ---
 
-# Fix: $1
+# Fix: $ARGUMENTS
 
-**Goal**: implement a focused correction and leave the code ready for `/push`.
-**Behaviour**: lightweight path — no plan document, no task files, no evidence folder. Read before writing, test what you touch, stop if scope grows.
+**Goal**: a minimal, verified fix with its own PR. No plan or task files.
 
----
-
-## Step 1 — Understand the Problem
-
-1. Read `CLAUDE.md` and `MEMORY.md` for context and known pitfalls.
-2. Read the affected files before writing a single line.
-3. If the fix is unclear or touches more than ~3 files, stop and suggest using `/dev-1-plan` instead.
-
----
-
-## Step 2 — Implement
-
-1. Apply the minimal change that solves the problem. No refactors, no extra features.
-2. Follow the project's conventions (consult relevant skills in `.claude/skills/`).
-3. Self-review: re-read every line you wrote. Fix typos, missing imports, inconsistencies.
-
----
-
-## Step 3 — Verify
-
-Run only the tests relevant to what you changed (see `dev-workflow` skill for commands).
-If tests fail: fix and re-run. Do not proceed with broken tests.
-
----
-
-## Step 4 — Hand Off
-
-Tell the user: **"Fix complete. Ready for `/push`."**
-
-> The branch for this fix will be created by `/push` (Step 5) if you are currently on `main`. No need to create it manually.
-
----
-
-## Unbreakable Rules
-
-- **Read before writing**: never modify code you haven't read.
-- **Minimal scope**: if the fix keeps growing, stop and escalate to `/dev-1-plan`.
-- **No placeholders, no TODOs**: the fix must be complete and functional.
-- **Do NOT commit**: that is `/push`'s responsibility.
+1. **Understand.** Read `CLAUDE.md`, `MEMORY.md`, the docs of the affected area and the affected code. Reproduce the
+   problem when possible (a failing test is the best reproduction). If the cause or the expected
+   behaviour is unclear, ask. If it grows beyond ~3 files or needs design, stop and propose
+   `/dev-1-plan`.
+2. **Branch** `fix/<slug>` from an up-to-date `main` (unless the user wants it on the current branch).
+3. **Fix** with the smallest change that solves it, plus a test that would have caught it.
+4. **Verify**: the touched area's tests, the full backend and frontend suites, E2E if the UI
+   changed, and the image build if the Dockerfile or dependencies changed (`dev-workflow`).
+5. **QA**: for anything beyond a trivial change, launch the `qa` subagent with a short description
+   of the fix instead of a task id (it reviews `git diff` and re-runs the suites).
+6. **Ship**: `/push` (commit, push, PR, CI). Report the PR link and anything the user must check by hand.

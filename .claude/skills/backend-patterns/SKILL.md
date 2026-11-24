@@ -5,16 +5,9 @@ description: Backend architecture patterns and conventions for this project. Cus
 
 # Backend Patterns
 
-> **THIS SKILL HAS NOT BEEN FILLED IN.**
->
-> All sections below are empty templates (`# e.g. ...`).
-> **Do not assume any language, framework, structure, or naming conventions.**
-> Before writing any backend code, ask the user:
-> - What language and framework does this project use?
-> - What is the directory structure under `backend/`?
-> - What naming conventions and patterns are established?
->
-> Fill in this skill before starting any backend work. See README.md for instructions.
+> **Being filled in by the template-base series.** Until task T013 rewrites this skill, the stack,
+> layout and commands are defined by `docs/plans/template-base.md` and the task files in
+> `docs/tasks/`; follow them instead of the empty sections below and do not ask about them.
 
 ## Stack
 

@@ -5,15 +5,9 @@ description: Development commands and environment setup for this project. Custom
 
 # Dev Workflow
 
-> **THIS SKILL HAS NOT BEEN FILLED IN.**
->
-> All commands below are placeholders (`<lint-command>`, `<test-command>`, etc.).
-> **Do not assume any service names, commands, or configuration.**
-> Before running any project command, ask the user:
-> - What services does this project have?
-> - What are the actual lint, test, build, and migration commands?
->
-> Fill in this skill before starting any development work. See README.md for instructions.
+> **Being filled in by the template-base series.** Until task T013 rewrites this skill, the stack,
+> layout and commands are defined by `docs/plans/template-base.md` and the task files in
+> `docs/tasks/`; follow them instead of the empty sections below and do not ask about them.
 
 ## Project Layout
 

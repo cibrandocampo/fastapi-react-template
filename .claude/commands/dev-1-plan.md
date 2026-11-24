@@ -1,124 +1,84 @@
 ---
-description: Plan a new feature — conceptual design, scope, and proposal
+description: Brainstorm and plan a new feature — design, scope and decisions agreed with the user
 argument-hint: <brief description of the feature>
 ---
 
-# Plan Feature: $1
+# Plan feature: $ARGUMENTS
 
-**Goal**: produce a design document approved by the user.
-**Behaviour**: you only plan and ask questions. No code, no tasks, no files beyond the plan document itself.
-
----
-
-## Phase 1 — Understand the Goal
-
-1. Read `CLAUDE.md` and `MEMORY.md` for project context.
-2. Read `docs/` for existing documentation (ARCHITECTURE.md, configuration.md, etc.).
-3. If previous plans exist in `docs/plans/`, read them to understand decisions already made.
-4. Ask the user everything needed with `AskUserQuestion`:
-   - What problem does this feature solve?
-   - What stack layers does it affect?
-   - Are there open design decisions?
-   - Are there constraints or preferences?
-
-**Never assume. If anything is unclear, ask with `AskUserQuestion` before continuing. Five questions now beats a full rewrite later.**
-
-**Do not advance to Phase 2 until you have clear answers.**
+**Goal**: a plan document the user has approved, with no open decisions.
+**Behaviour**: think with the user, then write the plan. No code and no tasks yet.
 
 ---
 
-## Phase 2 — Explore the Affected Code
+## Phase 1 — Context
 
-1. Use `Explore` agents to understand the current state of the code in affected areas.
-2. **Consult the `architecture` skill** and validate that the proposed approach fits the project's layer structure. Surface any red flags before continuing.
-3. Identify:
-   - Files that will be modified or created.
-   - Existing patterns that must be followed (consult `backend-patterns` and `frontend-patterns` skills).
-   - Opportunities to reuse existing code — search before proposing new abstractions.
-   - Dependencies between components.
-   - Known risks or pitfalls (consult MEMORY.md).
-4. Present the user with a summary of findings and validate your understanding.
+1. Read `CLAUDE.md`, `MEMORY.md`, `README.md`, existing `docs/plans/` and `docs/tasks/INDEX.md`.
+2. Read the docs (`docs/`, skills) of every area the feature touches.
+3. Explore the affected code (directly, or with `Explore` agents for broad sweeps). Read the real
+   code before proposing changes to it.
+4. If the feature depends on an external system (an API, a library, a service), check its
+   current documentation instead of relying on memory.
 
----
+## Phase 2 — Brainstorm
 
-## Phase 3 — Write the Proposal
+Share with the user, briefly:
 
-Create the plan document at `docs/plans/<feature-name>.md` with this structure:
+- What you understood the problem to be, and what you found in the code that matters.
+- 2–3 viable approaches with their trade-offs, and **your recommendation**.
+- The questions only the user can answer.
+
+Then ask with `AskUserQuestion` (several rounds if needed): goals, constraints, preferences, how
+it will be deployed and used, what is out of scope. Recommended option first.
+
+**Never assume a functional or conceptual point. Do not write the plan while one is open.**
+
+## Phase 3 — Write the plan
+
+`docs/plans/<feature-slug>.md`:
 
 ```markdown
-# Feature Name
-
-## Branch
-
-`feat/<feature-name>`
-
-> Branch will be created from `develop` if it exists, otherwise from `main`/`master`.
-> All tasks in this feature will be implemented on this branch.
+# Feature name
 
 ## Context
+What problem it solves and why now.
 
-What problem it solves. Why it is needed now.
+## Decisions confirmed with the user
+| Topic | Decision | Why |
+|-------|----------|-----|
 
-## Decisions Confirmed with User
-
-| Topic | Decision |
-|-------|----------|
-| ... | ... |
-
-## Design Proposal
-
-Conceptual design (not code). Components involved, data flow, architecture decisions.
+## Design
+Components, data flow, interfaces (APIs, messages, storage), how it is deployed.
+A small ASCII diagram if it helps. Concepts, not code.
 
 ## Scope
+### Included
+### Not included
 
-### What Is Included
-- ...
+## Affected areas
+| Area | Impact |
+|------|--------|
+| backend/ | ... |
+| frontend/ | ... |
+| database (migrations) | ... |
+| e2e/ | ... |
+| Docker / CI | ... |
 
-### What Is NOT Included
-- ...
+## Implementation order
+High-level steps. Foundations (repo layout, tooling, patterns skill, CI) first.
 
-## Affected Layers
+## Testing strategy
+What is unit-tested (backend, frontend), what is covered end to end, what needs a manual check
+by the user.
 
-| Layer | Impact |
-|-------|--------|
-| ... | ... |
-
-## Implementation Order
-
-Numbered list of high-level steps.
-
-## Critical Files
-
-| File | Changes |
-|------|---------|
-| ... | ... |
-
-## Risks and Considerations
-
-- ...
-
-## Open Design Decisions
-
-(If there are decisions yet to be made, list them here. They must be closed before creating tasks.)
+## Risks
 ```
 
-Confirm the branch name with the user before saving the document — it will be used for the entire feature.
+The plan must be self-contained: someone without this conversation must understand it.
 
-Present the document to the user and ask for feedback.
+## Phase 4 — Approve
 
----
+Present the plan (summary + path). Iterate until the user approves. Then create the feature branch
+from an up-to-date `main` (`git-conventions`) and commit the plan as the branch's first commit
+(`docs(<scope>): plan <feature>`). No push needed yet.
 
-## Phase 4 — Iterate Until Approval
-
-- If the user has feedback, adjust the document.
-- If there are open decisions, close them with `AskUserQuestion`.
-- Once approved, tell the user: **"Plan saved. Next step: `/dev-2-tasks docs/plans/<feature-name>.md`"**
-
----
-
-## Unbreakable Rules
-
-- **Do not implement anything**: no code, no tasks, no files beyond the plan document.
-- **Ask before assuming**: if in doubt, use `AskUserQuestion`. Always.
-- **Read the actual code** before proposing changes to existing areas.
-- **The document must be self-contained**: someone reading it without prior context must understand the proposal.
+Continue straight to `/dev-2-tasks docs/plans/<feature-slug>.md` unless the user wants to stop.

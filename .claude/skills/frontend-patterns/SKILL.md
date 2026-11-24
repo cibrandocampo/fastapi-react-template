@@ -5,16 +5,9 @@ description: Frontend architecture patterns and conventions for this project. Cu
 
 # Frontend Patterns
 
-> **THIS SKILL HAS NOT BEEN FILLED IN.**
->
-> All sections below are empty templates (`# e.g. ...`).
-> **Do not assume any framework, routing, state management, styling approach, or design tokens.**
-> Before writing any frontend code, ask the user:
-> - What framework and build tool does this project use?
-> - What is the directory structure under `frontend/`?
-> - What design tokens, component patterns, and CSS conventions are established?
->
-> Fill in this skill before starting any frontend work. See README.md for instructions.
+> **Being filled in by the template-base series.** Until task T013 rewrites this skill, the stack,
+> layout and commands are defined by `docs/plans/template-base.md` and the task files in
+> `docs/tasks/`; follow them instead of the empty sections below and do not ask about them.
 
 ## Stack
 

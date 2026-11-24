@@ -14,7 +14,10 @@ still stack-agnostic.
 ## Step 1
 Clone dotclaude, branch `feat/autonomous-workflow`, port `CLAUDE.md` working mode, commands, `qa`
 agent, `settings.json`, `git-conventions`; keep its generic skills (only fix what contradicts the new
-workflow, e.g. "commit once per feature"). README section describing the workflow.
+workflow, e.g. "commit once per feature").
+Its `backend-patterns`, `frontend-patterns` and `dev-workflow` skills start with a "not filled in —
+ask the user" banner that stops the autonomous workflow; replace it with a generic rule (fill the
+skill from the answers gathered in `/dev-1-plan`, then follow it), not a pointer to a specific plan. README section describing the workflow.
 
 ## Step 2
 Commit, push, PR to dotclaude's `main`. Record the PR link in this task file.
