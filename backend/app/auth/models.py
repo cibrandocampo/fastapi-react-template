@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, func
+from sqlalchemy import DateTime, ForeignKey, Index, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base
@@ -23,3 +23,31 @@ class RefreshToken(Base):
     replaced_by_id: Mapped[int | None] = mapped_column(
         ForeignKey("refresh_tokens.id", ondelete="SET NULL")
     )
+
+
+class LoginCode(Base):
+    """One-time code sent by email. Only the newest unconsumed, unexpired code of a user counts."""
+
+    __tablename__ = "login_codes"
+    __table_args__ = (Index("ix_login_codes_user_active", "user_id", "consumed_at", "expires_at"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    code_hash: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    attempts: Mapped[int] = mapped_column(default=0)
+    consumed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class FailedLogin(Base):
+    """A wrong password; enough of them in a window lock the account's password login."""
+
+    __tablename__ = "failed_logins"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
+    ip: Mapped[str | None] = mapped_column(String(45))

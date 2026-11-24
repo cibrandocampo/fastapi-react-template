@@ -1,5 +1,6 @@
 """Login sessions: a short-lived access token plus a rotating refresh token in a cookie."""
 
+import logging
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -14,7 +15,12 @@ from app.core.errors import AppError
 from app.core.security import create_access_token, hash_token, new_refresh_token
 from app.users.models import User
 
+log = logging.getLogger(__name__)
+
 REFRESH_COOKIE = "refresh_token"
+# Error code for a refresh refused because another request just rotated the token: the session
+# is still valid, the client retries with the new cookie and must not be logged out.
+REFRESH_IN_PROGRESS = "refresh_in_progress"
 REFRESH_COOKIE_PATH = "/api/auth"
 
 
@@ -67,7 +73,8 @@ async def rotate(db: AsyncSession, raw: str | None) -> Session:
         .execution_options(populate_existing=True)
     )
     if claimed is None:
-        await _on_reuse(db, token_hash)
+        if await _on_reuse(db, token_hash):
+            raise AppError(401, REFRESH_IN_PROGRESS, "Session is being refreshed, retry")
         raise invalid
     user = await db.get(User, claimed.user_id)
     if claimed.expires_at <= _now() or user is None or not user.is_active:
@@ -79,27 +86,30 @@ async def rotate(db: AsyncSession, raw: str | None) -> Session:
     return Session(user, create_access_token(user.id, user.role.value), new_raw)
 
 
-async def _on_reuse(db: AsyncSession, token_hash: str) -> None:
-    """A known token that was already revoked: revoke its family unless it was just rotated."""
+async def _on_reuse(db: AsyncSession, token_hash: str) -> bool:
+    """A revoked or unknown token was presented. Return True when it was rotated moments ago
+    (parallel requests: the session continues); otherwise revoke its family and return False."""
     token = await db.scalar(select(RefreshToken).where(RefreshToken.token_hash == token_hash))
     if token is None:
-        return
+        return False
     grace = timedelta(seconds=get_settings().refresh_reuse_grace_seconds)
-    just_rotated = token.replaced_by_id is not None and token.revoked_at > _now() - grace
-    if not just_rotated:
-        await _revoke_family(db, token.family_id)
-        await db.commit()
+    if token.replaced_by_id is not None and token.revoked_at > _now() - grace:
+        return True
+    await _revoke_family(db, token.family_id)
+    await db.commit()
+    log.warning("Refresh token reuse: family %s of user %s revoked", token.family_id, token.user_id)
+    return False
 
 
 async def revoke(db: AsyncSession, raw: str | None) -> None:
-    """Log out one session. Unknown or already revoked tokens are ignored."""
+    """Log out the session of this token: its whole family, so an already rotated token (an
+    old cookie) also ends the session it led to. Unknown tokens are ignored."""
     if not raw:
         return
-    await db.execute(
-        update(RefreshToken)
-        .where(RefreshToken.token_hash == hash_token(raw), RefreshToken.revoked_at.is_(None))
-        .values(revoked_at=_now())
-    )
+    token = await db.scalar(select(RefreshToken).where(RefreshToken.token_hash == hash_token(raw)))
+    if token is None:
+        return
+    await _revoke_family(db, token.family_id)
     await db.commit()
 
 

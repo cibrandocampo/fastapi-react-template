@@ -11,7 +11,8 @@ Admin-only `/api/users` endpoints with guards that keep at least one active admi
 ## Step 1 — Endpoints (admin only)
 - `GET /api/users?q=&role=&active=&page=&size=` → paginated list (`items`, `total`), search by email/name.
 - `POST /api/users {email, first_name, last_name, role, auth_method, password?, language?}` → creates an
-  active user (password required for the password method, rules from T003).
+  active user with `email_verified_at` set (the admin vouches for it, so the unverified-sign-up
+  clean-up never deletes it) (password required for the password method, rules from T003).
 - `GET /api/users/{id}`, `PATCH /api/users/{id}` (names, role, is_active, auth_method, language).
 - `POST /api/users/{id}/set-password {password}` (sets method `password`, revokes their sessions).
 - `DELETE /api/users/{id}`.

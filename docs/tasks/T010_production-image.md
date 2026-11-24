@@ -9,7 +9,10 @@ Synology Container Manager.
 ## Step 1 — Dockerfile (repository root)
 Multi-stage: node stage builds `frontend/dist`; python 3.14-slim stage installs `requirements.txt`
 with `--require-hashes`, copies the backend and the dist; non-root user; entrypoint runs
-`alembic upgrade head` then uvicorn (`--proxy-headers`, `--forwarded-allow-ips` from env);
+`alembic upgrade head` then uvicorn with `--no-proxy-headers` (enabled by default since uvicorn 0.54;
+one trust list only: the app's
+`TRUSTED_PROXIES`, used by `client_ip()`; HTTPS detection is not needed because cookies are
+configured by `COOKIE_SECURE`);
 `HEALTHCHECK` on `/api/health`; build arg `APP_VERSION` exposed in `/api/health`.
 FastAPI serves `/assets` statically and every non-`/api` path with `index.html` (SPA fallback),
 with cache headers (hashed assets immutable, index no-cache) and security headers

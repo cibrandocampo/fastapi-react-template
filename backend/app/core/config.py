@@ -37,6 +37,21 @@ class Settings(BaseSettings):
     smtp_tls: Literal["none", "starttls", "ssl"] = "starttls"
     smtp_timeout_seconds: float = 10
 
+    # Login
+    allow_self_signup: bool = False  # anyone can create an account (it starts without permissions)
+    otp_minutes: int = 10
+    otp_max_attempts: int = 5
+    lockout_attempts: int = 5  # failed passwords within lockout_minutes lock password login
+    lockout_minutes: int = 15
+    unverified_signup_days: int = 7  # sign-ups never confirmed with a code are deleted after this
+    block_disposable_email: bool = True
+    disposable_email_extra_domains: str = ""  # comma-separated
+    disposable_email_allow_domains: str = ""  # comma-separated
+
+    # Rate limits (in memory, per process) and the proxies whose X-Forwarded-For is trusted
+    rate_limit_enabled: bool = True
+    trusted_proxies: str = ""  # comma-separated IPs or CIDRs
+
     # First administrator, created at start-up when no admin exists
     admin_email: str | None = None
     admin_password: str | None = None

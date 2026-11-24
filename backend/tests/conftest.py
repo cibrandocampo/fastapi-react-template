@@ -7,6 +7,10 @@ os.environ["DATABASE_URL"] = os.environ["TEST_DATABASE_URL"]
 os.environ["ENV"] = "test"
 os.environ["BCRYPT_ROUNDS"] = "4"  # fast hashing in tests
 os.environ["SECRET_KEY"] = "test-secret-key-with-enough-length-for-hs256"
+os.environ["EMAIL_BACKEND"] = "memory"
+os.environ["RATE_LIMIT_ENABLED"] = "false"  # enabled explicitly by the rate-limit tests
+os.environ["ALLOW_SELF_SIGNUP"] = "false"
+os.environ["COOKIE_SECURE"] = "false"  # the test client talks plain http
 
 from collections.abc import AsyncIterator
 
@@ -37,6 +41,23 @@ async def clean_tables() -> AsyncIterator[None]:
     if tables:
         async with get_engine().begin() as conn:
             await conn.execute(text(f"TRUNCATE {tables} RESTART IDENTITY CASCADE"))
+
+
+@pytest.fixture(autouse=True)
+def fresh_state():
+    """Rate-limit counters and the email outbox are process globals: reset them per test."""
+    from app.auth.disposable import blocked_domains
+    from app.core import ratelimit
+    from app.emails import sender
+
+    for limit in ratelimit.ALL:
+        limit.reset()
+    sender.outbox.clear()
+    blocked_domains.cache_clear()
+    ratelimit._trusted_networks.cache_clear()
+    yield
+    blocked_domains.cache_clear()
+    ratelimit._trusted_networks.cache_clear()
 
 
 @pytest.fixture

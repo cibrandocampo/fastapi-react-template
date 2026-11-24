@@ -9,7 +9,7 @@ Plan: [docs/plans/template-base.md](../plans/template-base.md) · Branch: `feat/
 | T002 | Backend skeleton and dev environment | T001 | Completed | Approved |
 | T003 | Users, roles and sessions | T002 | Completed | Approved |
 | T004 | Transactional emails | T002 | Completed | Approved |
-| T005 | Login flow (OTP and password) | T003, T004 | Pending | — |
+| T005 | Login flow (OTP and password) | T003, T004 | Completed | Approved |
 | T006 | User management API | T003 | Pending | — |
 | T007 | Frontend skeleton | T002 | Pending | — |
 | T008 | Login, onboarding and waiting pages | T005, T007 | Pending | — |

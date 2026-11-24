@@ -17,11 +17,14 @@ HTTP_CODES = {
 class AppError(Exception):
     """An error the API reports to the client with a stable machine-readable code."""
 
-    def __init__(self, status: int, code: str, message: str) -> None:
+    def __init__(
+        self, status: int, code: str, message: str, headers: dict[str, str] | None = None
+    ) -> None:
         super().__init__(message)
         self.status = status
         self.code = code
         self.message = message
+        self.headers = headers or {}
 
 
 def error_body(code: str, message: str, **extra: object) -> dict:
@@ -29,7 +32,10 @@ def error_body(code: str, message: str, **extra: object) -> dict:
 
 
 async def _app_error(_: Request, exc: AppError) -> JSONResponse:
-    return JSONResponse(error_body(exc.code, exc.message), status_code=exc.status)
+    headers = dict(exc.headers)
+    if exc.status == 401:
+        headers.setdefault("WWW-Authenticate", "Bearer")
+    return JSONResponse(error_body(exc.code, exc.message), status_code=exc.status, headers=headers)
 
 
 async def _http_error(_: Request, exc: StarletteHTTPException) -> JSONResponse:

@@ -49,6 +49,8 @@ services:
       SMTP_USER: ""
       SMTP_PASSWORD: ""
       SITE_URL: http://localhost:15173
+      ALLOW_SELF_SIGNUP: "true"
+      RATE_LIMIT_ENABLED: "false"
       MAILPIT_API_URL: http://mailpit:8025
       MAILPIT_SMTP_HOST: mailpit
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"

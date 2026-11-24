@@ -70,6 +70,8 @@ class User(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Set by the first successful login (code or password). Unset for sign-ups not yet confirmed.
+    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     @validates("email")
     def _normalise_email(self, _key: str, value: str) -> str:

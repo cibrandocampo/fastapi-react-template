@@ -1,5 +1,6 @@
 """Password hashing and rules, access tokens, random refresh tokens."""
 
+import asyncio
 import hashlib
 import secrets
 import uuid
@@ -40,6 +41,15 @@ def verify_password(password: str, password_hash: str | None) -> bool:
     if not password_hash or len(password.encode()) > PASSWORD_MAX_BYTES:
         return False
     return bcrypt.checkpw(password.encode(), password_hash.encode())
+
+
+async def hash_password_async(password: str) -> str:
+    """hash_password off the event loop: bcrypt takes ~0.3 s and would block every request."""
+    return await asyncio.to_thread(hash_password, password)
+
+
+async def verify_password_async(password: str, password_hash: str | None) -> bool:
+    return await asyncio.to_thread(verify_password, password, password_hash)
 
 
 def create_access_token(user_id: int, role: str, now: datetime | None = None) -> str:

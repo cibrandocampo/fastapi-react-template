@@ -1,6 +1,7 @@
 """Creates the first administrator from ADMIN_EMAIL / ADMIN_PASSWORD."""
 
 import logging
+from datetime import UTC, datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -8,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.errors import AppError
-from app.core.security import hash_password, validate_password
+from app.core.security import hash_password_async, validate_password
 from app.users.models import AuthMethod, Role, User, normalise_email
 
 log = logging.getLogger(__name__)
@@ -36,9 +37,10 @@ async def ensure_admin(db: AsyncSession) -> User | None:
     admin = User(
         email=email,
         auth_method=AuthMethod.password,
-        password_hash=hash_password(settings.admin_password),
+        password_hash=await hash_password_async(settings.admin_password),
         role=Role.admin,
         is_active=True,
+        email_verified_at=datetime.now(UTC),  # vouched for by whoever set ADMIN_EMAIL
     )
     db.add(admin)
     try:
