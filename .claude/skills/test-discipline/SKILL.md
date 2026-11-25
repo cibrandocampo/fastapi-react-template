@@ -83,6 +83,17 @@ If the failure points to infrastructure (build pipeline, caching, env mismatch):
 - [ ] Every infra gotcha I hit is in MEMORY.md if it could bite next time.
 - [ ] Evidence table in the task file references **real command output**, not prose.
 
+## In this template
+
+| Suite | Runs with | Notes |
+|---|---|---|
+| Backend | `make coverage-backend` (pytest in the dev backend container) | real Postgres `app_test`, tables truncated per test; email to `sender.outbox` (`EMAIL_BACKEND=memory`) except the Mailpit integration test; concurrency tests open parallel sessions |
+| Frontend | `make test-frontend` (Vitest + Testing Library + MSW) | query by role and name; unhandled requests fail; `asyncUtilTimeout` 3 s for the first render under coverage, not to hide races |
+| End-to-end | `make e2e` (Playwright in Docker against the production image) | one worker; each spec creates its own accounts (`uniqueEmail`); codes read from Mailpit by polling; no `force`, no `waitForTimeout` |
+
+"Three consecutive green runs" means three runs of the suite you touched (`make e2e` three times for
+spec changes). Evidence files go to `docs/tasks/evidence/<task>/` (git-ignored).
+
 ## Why This Matters
 
 A false-negative test — one that passes while the feature is broken — creates direct user impact. The cost of strict discipline now is much smaller than the cost of a regression hitting real users later.

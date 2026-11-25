@@ -1,134 +1,66 @@
 ---
 name: frontend-patterns
-description: Frontend architecture patterns and conventions for this project. Customize this skill with the project's actual stack, design tokens, and component patterns.
+description: Frontend conventions of this template — React 19 + Vite + Mantine 9 structure, routing and guards, API client and TanStack Query, i18n keys, theme tokens and the visual system, navigation, accessibility and tests. Use when writing or reviewing frontend code.
 ---
 
 # Frontend Patterns
 
-> **Being filled in by the template-base series.** Until task T013 rewrites this skill, the stack,
-> layout and commands are defined by `docs/plans/template-base.md` and the task files in
-> `docs/tasks/`; follow them instead of the empty sections below and do not ask about them.
-
 ## Stack
 
-> _Fill in: framework, routing, state management, styling approach, build tool, test framework._
+React 19 · Vite 8 · React Router 8 · Mantine 9 (+ form, notifications, hooks) · TanStack Query 5 ·
+i18next (en, es, gl) · lucide-react · Vitest 5 + Testing Library + MSW 3 · ESLint 9 (jsx-a11y) ·
+Prettier. Plain JavaScript (JSX), named exports, one component per file.
 
-```
-Framework:        # e.g. React 18, Vue 3, SvelteKit
-Routing:          # e.g. React Router v6, Next.js App Router
-State:            # e.g. Zustand, Redux Toolkit, Pinia, Context API
-Styling:          # e.g. CSS Modules, Tailwind, styled-components
-Build:            # e.g. Vite, webpack, Turbopack
-Tests:            # e.g. Vitest + Testing Library, Jest, Cypress
-```
+## Structure
 
-## Design Tokens
+See the architecture skill for the folders. Rules:
 
-> _Fill in: color palette, spacing scale, typography, breakpoints. These are the source of truth — never use raw values._
+- A route = a page in `pages/` (`pages/admin/` for admin pages), registered in `App.jsx` behind the
+  right guard: `AnonymousOnly` (login), `RequireSession` (any signed-in account), `RequireRole min="user"`
+  or `"admin"`. Pages most users never open are `lazy()` (they get their own chunk).
+- Shared UI goes to `components/` only when a second page uses it. Page-specific helpers stay next to
+  the page (`pages/admin/usersApi.js`, `UserDialogs.jsx`).
+- Styles: Mantine props and theme first; a CSS module (`Name.module.css`) next to the component for the
+  rest; global rules only in `styles/base.css` (and only for Mantine-wide fixes).
 
-### Colors
+## Data and the API
 
-```css
-/* Fill in project color variables */
-/* --c-primary: ;       */
-/* --c-secondary: ;     */
-/* --c-background: ;    */
-/* --c-surface: ;       */
-/* --c-text: ;          */
-/* --c-text-muted: ;    */
-/* --c-border: ;        */
-/* --c-error: ;         */
-/* --c-success: ;       */
-/* --c-warning: ;       */
-```
+- `api/client.js` `api(path, { method, body })`: JSON, the access token from memory, one shared refresh
+  on 401 (then a single retry), `ApiError { status, code, message, details }` on failure. Never call
+  `fetch` directly.
+- Server state with TanStack Query: one hook per query/mutation (`useUsers`, `useUpdateUser`…), query
+  keys starting with the resource (`['users', …]`), mutations invalidate their resource. Errors without
+  a local handler show a toast (`notifyError`); dialogs show their own `ErrorAlert`.
+- Session state only in `AuthContext` (`useAuth()`: `user`, `status`, `loginStart`, `loginVerify`,
+  `updateProfile`, `changePassword`, `logout`). No other global store.
+- Map API error `code`s to translated messages; unknown codes fall back to a generic message.
 
-### Typography
+## i18n
 
-```
-/* Fill in: font family, scale, weights */
-/* Base size:  */
-/* Scale:      */
-/* Weights:    */
-```
+- Keys by area (`login.*`, `profile.*`, `users.*`, `nav.*`, `common.*`, `errors.*`), the same keys in
+  `en.json`, `es.json` and `gl.json` (a test checks parity). English is the reference.
+- Copy: sentence case, plain verbs, a button says what happens ("Save changes", "Grant access"), the
+  toast echoes it ("Changes saved."). Galician and Spanish written natively, not word for word.
+- Language: the account's language after sign-in; before it, the last one used in this browser
+  (`localStorage`), else the browser's, else English.
 
-### Spacing
+## Accessibility (WCAG 2.2 AA)
 
-```
-/* Fill in: spacing scale */
-/* Base unit:  */
-/* Scale:      */
-```
+Every control has an accessible name (labels, `aria-label` for icon buttons with the target, e.g.
+"Edit ana@example.com"); decorative icons `aria-hidden`; visible focus (2 px outline); contrast 4.5:1
+text / 3:1 controls in both schemes; 44–48 px touch targets on mobile; errors in `role="alert"` and
+focus moved to them when an action fails; dialogs named, focus returned to the trigger; reduced motion
+respected. ESLint's jsx-a11y must stay clean.
 
-### Breakpoints
+## Tests
 
-```
-/* Fill in: breakpoint values */
-/* sm:  */
-/* md:  */
-/* lg:  */
-```
-
-## Reuse-First Principle
-
-Before writing new UI code:
-
-1. **Check existing components** — does a component already do this?
-2. **Check existing styles** — does a CSS class or token already cover this?
-3. **Check existing hooks/utils** — does a hook already encapsulate this logic?
-
-The 1/2/3 rule: once is fine, twice is a pattern, three times means extract.
-
-## Component Patterns
-
-> _Fill in: conventions for pages vs shared components, naming, file structure, props patterns. All frontend code lives under `frontend/` in the monorepo._
-
-```
-Root:            # frontend/
-Pages:           # e.g. frontend/src/pages/, one file per route
-Shared:          # e.g. frontend/src/components/, only truly reusable UI
-Naming:          # e.g. PascalCase files, named exports
-Co-location:     # e.g. component + styles + tests in same folder
-```
-
-## CSS Conventions
-
-> _Fill in: how styles are written and organised._
-
-```
-Approach:        # e.g. CSS Modules, utility classes, BEM
-Tokens:          # Always use design tokens, never raw values
-Avoid:           # e.g. inline styles, magic numbers, global overrides
-```
-
-## API Client
-
-> _Fill in: how the frontend calls the backend._
-
-```
-Client:          # e.g. src/api/client.js, fetch wrapper, axios instance
-Auth:            # e.g. JWT in header, cookie, session
-Error handling:  # e.g. throws on non-2xx, global error boundary
-```
-
-## State Management
-
-> _Fill in: what lives where._
-
-```
-Server state:    # e.g. React Query, SWR, manual fetch + useState
-UI state:        # e.g. local useState, Zustand store
-Global state:    # e.g. auth context, theme context
-```
-
-## Testing
-
-> _Fill in: what to test and how._
-
-```
-Unit:            # e.g. Vitest + Testing Library, test behaviour not implementation
-E2E:             # e.g. Playwright, cover critical user flows
-Mocking:         # e.g. MSW for API mocks
-```
+- Vitest + Testing Library: test behaviour through roles and names (`getByRole('button', { name })`),
+  never class names or test ids. `renderWithProviders(<AppRoutes />, { route })` renders the real app.
+- MSW (`test/server.js`): handlers per test with `server.use(...)`; unhandled requests fail the test.
+  Helpers: `withSession(user)`, `makeUser(overrides)`, `apiError(status, code)`.
+- Mantine runs with `env="test"` (no transitions); notifications are cleared after each test.
+- Coverage thresholds 95 / 90 / 95 / 95 (statements / branches / functions / lines); currently ~100 %.
+- The real flows (login with codes, roles, persistence) are covered by the Playwright suite in `e2e/`.
 
 ## Visual system (T015)
 

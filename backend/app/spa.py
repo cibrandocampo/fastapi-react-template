@@ -20,9 +20,10 @@ class ImmutableStaticFiles(StaticFiles):
     """File names under /assets carry a content hash, so a cached copy never goes stale."""
 
     async def get_response(self, path: str, scope: Scope) -> Response:
+        # Misses and wrong methods are raised as HTTPException; what returns is the file (200,
+        # or 206 for a range) or a 304, and all of them keep the cache policy.
         response = await super().get_response(path, scope)
-        if response.status_code in (200, 304):
-            response.headers["Cache-Control"] = IMMUTABLE
+        response.headers["Cache-Control"] = IMMUTABLE
         return response
 
 

@@ -1,120 +1,92 @@
 ---
 name: backend-patterns
-description: Backend architecture patterns and conventions for this project. Customize this skill with the project's actual stack, layer structure, and coding conventions.
+description: Backend conventions of this template — FastAPI + SQLAlchemy async + PostgreSQL modules, settings, sessions and locking, migrations, emails, background work, rate limits, tests. Use when writing or reviewing backend code.
 ---
 
 # Backend Patterns
 
-> **Being filled in by the template-base series.** Until task T013 rewrites this skill, the stack,
-> layout and commands are defined by `docs/plans/template-base.md` and the task files in
-> `docs/tasks/`; follow them instead of the empty sections below and do not ask about them.
-
 ## Stack
 
-> _Fill in: language, framework, database, cache, queue, test framework._
+Python 3.14 · FastAPI · SQLAlchemy 2 (async, asyncpg) · PostgreSQL 17 · Alembic · Pydantic v2 +
+pydantic-settings · PyJWT · bcrypt · aiosmtplib + Jinja2 · pytest (+ pytest-asyncio, httpx) · ruff.
+Dependencies are pinned with hashes: edit `requirements.in` / `requirements-dev.in`, then `make lock`.
 
-```
-Language:        # e.g. Python 3.12, Node 20, Go 1.22
-Framework:       # e.g. Django 5 + DRF, FastAPI, Express, Gin
-Database:        # e.g. PostgreSQL 16, MySQL, SQLite
-Cache:           # e.g. Redis 7, Memcached
-Queue:           # e.g. Celery + Redis, BullMQ, none
-Tests:           # e.g. pytest, Jest, Go test
-```
+## Modules
 
-## Project Structure
+See the architecture skill for the layout. Conventions:
 
-> _Fill in: directory layout and what lives where. All backend code lives under `backend/` in the monorepo._
+- Routers parse input, call a service or a few queries, return a schema. Rules shared by two endpoints
+  go to `service.py`.
+- Dependencies are `Annotated` aliases (`Db = Annotated[AsyncSession, Depends(get_session)]`).
+- Blocking work never runs on the event loop: bcrypt goes through `hash_password_async` /
+  `verify_password_async` (thread).
 
-```
-backend/
-  # Fill in the project's actual structure
-  # e.g. for Django:
-  # apps/<app>/models.py
-  # apps/<app>/views.py
-  # apps/<app>/serializers.py
-  # apps/<app>/tests/
-  # e.g. for FastAPI / Node:
-  # src/domain/
-  # src/application/
-  # src/infrastructure/
-```
+## Settings
 
-## Reuse-First Principle
+`core/config.py` `Settings` (pydantic-settings) read from the environment; `get_settings()` is cached.
+A new setting needs: a typed field with a safe default, a line in `.env.example`, a row in
+`docs/configuration.md`, and a check in `production_problems()` if a default is unsafe in production.
+Tests override with environment variables + `get_settings.cache_clear()`.
 
-Before writing new backend code:
+## Database
 
-1. **Search for existing utilities** — helpers, mixins, base classes that cover this.
-2. **Check existing models/schemas** — does the data already exist somewhere?
-3. **Check existing services** — does a use case already implement this logic?
+- Models subclass `core.db.Base`; register new model modules in `app/models.py`.
+- Timestamps are timezone-aware UTC (`DateTime(timezone=True)`, `datetime.now(UTC)`).
+- Case-insensitive uniqueness through functional indexes (`func.lower(User.email)` — the column, not a
+  string literal).
+- Migrations: `make db-revision m="what changed"` (autogenerate), then read and fix the file; the name
+  prefix is the date. Every migration has a working `downgrade`. The tests run downgrade-to-base and
+  upgrade-to-head once per session.
 
-The 1/2/3 rule: once is fine, twice is a pattern, three times means extract.
+## Concurrency (read this before touching users or tokens)
 
-## Models / Entities
+Requests run concurrently; every read-modify-write takes row locks, always in the same order:
 
-> _Fill in: how models are defined, naming conventions, field conventions._
+1. the user row (`sessions.lock_user` → `SELECT … FOR NO KEY UPDATE`), then
+2. that user's refresh tokens.
 
-```
-Naming:          # e.g. singular PascalCase, snake_case fields
-Timestamps:      # e.g. created_at / updated_at on every model
-Soft delete:     # e.g. deleted_at field vs hard delete
-Indexing:        # e.g. always index FK fields, search fields
-```
+Refresh locks the owner's user row `FOR SHARE` (`lock_user(..., share=True)`), then claims the token
+with one atomic `UPDATE … RETURNING` (a second claimant gets nothing and falls into the reuse rules). The clean-up task uses
+`SKIP LOCKED` and `lock_timeout` 200 ms so it never blocks requests. Guards that count rows ("last
+admin") count under the lock. A new rule of this kind needs a concurrency test (see
+`tests/test_auth_concurrency.py`).
 
-## Services / Use Cases
+## Sessions and tokens
 
-> _Fill in: how business logic is structured._
+`auth/sessions.py` is the only place that creates, rotates or revokes sessions: access JWT (HS256,
+`SECRET_KEY`, `ACCESS_TOKEN_MINUTES`), refresh token random and stored as SHA-256, one family per login,
+reuse after the grace window revokes the family. Password changes and admin "set password" revoke
+every session of the user. One-time codes: 6 digits, stored hashed, `OTP_MINUTES`, `OTP_MAX_ATTEMPTS`.
 
-```
-Location:        # e.g. apps/<app>/services.py, src/use-cases/
-Naming:          # e.g. verb_noun() functions, NounVerb classes
-Input/output:    # e.g. dataclasses, typed dicts, plain dicts
-Side effects:    # e.g. always explicit, never hidden in getters
-```
+## Emails
 
-## API Conventions
+`emails/sender.send_email(to, template, lang, context)`; templates in
+`emails/templates/<template>/<lang>.{subject.txt,body.txt,body.html}` for en/es/gl — add all nine
+files for a new template. `EMAIL_BACKEND=memory` keeps them in `sender.outbox` (tests). Never log the
+address or the body.
 
-> _Fill in: URL structure, HTTP method semantics, response format, error format._
+## Background work
 
-```
-URL style:       # e.g. /api/v1/<resource>/, trailing slash, kebab-case
-Methods:         # GET list/detail, POST create, PATCH update, DELETE remove
-Success:         # e.g. 200 with body, 201 for create, 204 for delete
-Errors:          # e.g. { "error": "message", "code": "ERROR_CODE" }
-Auth:            # e.g. JWT Bearer, session cookie, API key header
-Pagination:      # e.g. { "results": [], "count": N, "next": url }
-```
+Only `core/scheduler.py` (clean-up loop started in the lifespan). Periodic tasks there must be
+idempotent, short, and skip locked rows. Anything heavier needs a queue — ask first.
 
-## Error Handling
+## Rate limits and client IP
 
-> _Fill in: how errors are caught, logged, and returned._
+`core/ratelimit.py`: `RateLimit(name, max, window_s)` sliding windows in memory, keyed by client IP
+(`client_ip(request)`, which honours `X-Forwarded-For` only from `TRUSTED_PROXIES`) or by account.
+Add new limits to `ALL` so tests reset them. `RATE_LIMIT_ENABLED=false` in dev and e2e.
 
-```
-Exceptions:      # e.g. domain exceptions vs infrastructure exceptions
-Logging:         # e.g. log at service boundary, not inside domain
-User messages:   # e.g. generic for 5xx, specific for 4xx
-Stack traces:    # e.g. never exposed to client, always in server logs
-```
+## Errors and logging
 
-## Database Patterns
+`AppError` for every expected failure (api-design). Unexpected exceptions are answered by
+`UnhandledErrorMiddleware`. Loggers are `logging.getLogger(__name__)` under `app.*`; log ids, never
+emails, names, codes or tokens.
 
-> _Fill in: query conventions, transaction handling, migration rules._
+## Tests (`backend/tests/`)
 
-```
-Queries:         # e.g. always through ORM, raw SQL only for complex reporting
-Transactions:    # e.g. wrap multi-step writes in a transaction
-Migrations:      # e.g. always reversible, never drop columns directly
-N+1:             # e.g. use select_related/prefetch_related, never lazy load in loops
-```
-
-## Testing
-
-> _Fill in: what to test and at which layer._
-
-```
-Unit:            # e.g. domain logic in isolation, no DB
-Integration:     # e.g. services + DB, real DB in test transaction
-API:             # e.g. full request/response cycle, authenticated
-Fixtures:        # e.g. factory functions, not fixtures files
-Coverage:        # e.g. 100% on domain layer, 80% minimum overall
-```
+- Real PostgreSQL (`app_test` database in the dev stack), migrated once, tables truncated after each
+  test; `NullPool`. No SQLite, no mocks of the database.
+- Fixtures in `conftest.py` / `helpers.py`: `client` (httpx ASGI), `db`, user factories, login helpers.
+- One concept per test; every error code and role check tested; concurrency rules tested with real
+  parallel sessions.
+- `make coverage-backend` fails under 95 % (currently 100 %).

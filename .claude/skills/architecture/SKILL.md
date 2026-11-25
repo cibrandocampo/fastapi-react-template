@@ -1,88 +1,76 @@
 ---
 name: architecture
-description: Architecture validation before implementing. Use at the start of any feature or fix to verify the approach fits the project structure — before writing a single line of code.
+description: Architecture of this template (FastAPI + PostgreSQL API, React SPA, one production image) and the checks to run before implementing a feature or fix. Use at the start of any feature or fix, before writing code.
 ---
 
 # Architecture
 
-Before implementing, answer these questions. If any answer is "no" or "unsure", stop and resolve it with the user.
+## The system
 
-## Right-Size the Structure First
+```
+Browser ── React SPA (frontend/) ──fetch /api──► FastAPI app (backend/app) ──► PostgreSQL
+                                                     │
+                                                     └─ SMTP (Mailpit in dev/e2e)
+```
 
-Not every project needs the same level of layering. Apply the minimum structure that keeps the project clean and maintainable — no more.
+- **One process, one image.** In production the FastAPI app also serves the built SPA (`app/spa.py`):
+  `/api/*` is the API, `/assets/*` the hashed bundle, every other GET falls back to `index.html`.
+  In development Vite serves the SPA on :15173 and proxies `/api` to the backend on :18000.
+- **One instance.** Rate limits (`core/ratelimit.py`) and the clean-up task (`core/scheduler.py`) live
+  in the process. Running several replicas needs a shared store first — raise it with the user.
+- **Behind a reverse proxy** for HTTPS (Synology DSM). The app trusts forwarded addresses only from
+  `TRUSTED_PROXIES`.
 
-| Project type | Appropriate structure |
+## Backend layout (`backend/app/`)
+
+| Module | Holds |
 |---|---|
-| Script / utility | Functions in modules. No layers needed. Keep related logic together. |
-| Simple CRUD API | Routes → service functions → DB calls. Three logical areas, no formal layers. |
-| Mid-size app | Separate business logic from HTTP handlers and DB access. Clear module boundaries. |
-| Complex domain | Full layered architecture: Domain / Application / Infrastructure / Interface. |
+| `main.py` | `create_app()`: settings check, logging, middleware (errors, security headers), routers, SPA |
+| `core/` | cross-cutting: `config` (settings), `db` (engine, sessions, `Base`), `errors` (envelope, `AppError`), `security` (passwords, JWT), `ratelimit`, `scheduler`, `headers`, `logging`, `types` |
+| `auth/` | `/api/auth`: login by code or password, refresh/logout, own profile; `sessions` (tokens), `otp`, `deps` (`current_user`, `require_role`), disposable domains |
+| `users/` | `models.User`, `/api/users` admin API, `service` (rules shared by endpoints), `bootstrap` (first admin) |
+| `emails/` | Jinja2 templates per language (`templates/<name>/<lang>.*`), `sender` |
+| `models.py` | imports every model module for Alembic |
 
-**The rule**: structure must be chosen at the start and applied consistently — not added later as an afterthought. A simple structure chosen on day one is far better than a complex structure bolted on halfway through.
+A feature is a package like `auth/` or `users/`: `models.py`, `schemas.py` (Pydantic in/out),
+`router.py` (HTTP only: parse, call, answer), `service.py` when rules are shared or non-trivial. No
+repositories or use-case classes: SQLAlchemy sessions are used directly in services. Add layers only
+when a real need appears, and ask first.
 
-**The anti-rule**: do not build cathedrals for what is a village chapel. If the project is a simple API, do not introduce domain events, ports & adapters, and abstract repositories. That is overengineering, and it slows everything down.
+## Frontend layout (`frontend/src/`)
 
-When in doubt, choose the simpler level. It is always easier to add structure later than to remove it.
+| Path | Holds |
+|---|---|
+| `App.jsx` | routes and their guards (`AnonymousOnly`, `RequireSession`, `RequireRole`); lazy pages |
+| `api/` | `client.js` (fetch wrapper, token, refresh), `queryClient.js` (TanStack Query, error toasts) |
+| `auth/` | `AuthContext` (session state and actions), `useAuth`, route guards |
+| `pages/` | one component per route (`admin/` for admin pages), with their tests |
+| `components/` | shell (`AppLayout`, `AuthLayout`, `BottomNav`), menus, brand |
+| `i18n/` | `en.json`, `es.json`, `gl.json` (same keys), detection |
+| `theme.js`, `styles/base.css` | Mantine theme and the few global rules (see frontend-patterns) |
 
----
+## Auth model (summary — details in the security skill)
 
-## Layer Responsibilities (for mid-size and complex projects)
+Access token (JWT, 15 min) in memory, sent as `Authorization: Bearer`; refresh token (opaque, rotated)
+in an HttpOnly SameSite=Strict cookie on `/api/auth`. Roles: `none` (signed up, waiting), `user`,
+`admin`, checked with `require_role(...)` on the server and `RequireRole` in the UI (UI checks are
+convenience only).
 
-| Layer | Contains | Must NOT contain |
-|-------|----------|-----------------|
-| **Domain** | Business rules, entities, value objects, domain events | Framework code, DB queries, HTTP logic |
-| **Application** | Use cases, orchestration, input/output ports | Business rules, direct DB access, HTTP details |
-| **Infrastructure** | DB adapters, HTTP clients, external services, framework glue | Business rules, use case logic |
-| **Interface** | Controllers, serializers, views, CLI handlers | Business logic, DB queries |
+## Before implementing — checklist
 
-If you are unsure which layer a piece of code belongs to, ask: "Would this code need to change if I swapped the database? The framework? The transport protocol?" Each layer should only need to change for its own reasons.
+- [ ] I know which package the code belongs to; routers only do HTTP, rules live in services.
+- [ ] I searched for an existing helper (`core/`, `users/service.py`, `api/client.js`, components).
+- [ ] Concurrency: any read-modify-write on a user or token takes the row lock in the existing order
+      (user row first, then tokens) — see backend-patterns.
+- [ ] Every new endpoint has a role check, an error code in the envelope and a test per error.
+- [ ] Every new UI string exists in the three languages.
+- [ ] Nothing here assumes more than one app instance, or I raised it.
+- [ ] No abstraction without a second real use (YAGNI); functions over 30 lines get split.
 
-## Validation Checklist — Before Implementing
+## Red flags — stop and discuss
 
-### Placement
-- [ ] I know which layer each new class/function belongs to.
-- [ ] No business logic is leaking into controllers, serializers, or views.
-- [ ] No database queries are happening inside domain entities.
-- [ ] No framework imports inside domain or application layer code.
+Business rules in a router or a React component; a new global state store; a background job outside
+`core/scheduler.py`; a second database or cache; storing tokens in `localStorage`; disabling a security
+header or CSP rule to make something work.
 
-### Reuse
-- [ ] I searched the codebase for similar functionality before writing new code.
-- [ ] If I found similar code (2+ instances), I am reusing or extracting — not duplicating.
-- [ ] The abstraction I am creating (if any) is justified by actual reuse, not speculation.
-
-### Cohesion & Coupling
-- [ ] The class/module I am adding or modifying has a single, clear responsibility.
-- [ ] I am not adding a method to a class just because it is convenient — it belongs there.
-- [ ] New dependencies between modules go in one direction only (inner layers don't depend on outer layers).
-
-### Scope
-- [ ] I am not building for hypothetical future requirements (YAGNI).
-- [ ] Every abstraction I introduce is needed now, not "might be useful later".
-- [ ] If a function would be over 30 lines, I have considered splitting it.
-
-## Red Flags — Stop and Reconsider
-
-If you find yourself doing any of the following, pause and discuss with the user:
-
-- **Fat controllers**: a controller/view doing more than receiving input → calling a use case → returning output.
-- **Anemic domain**: entities that are just data bags with no behaviour; all logic lives in services.
-- **Service soup**: dozens of service classes with one method each, no clear domain model.
-- **Circular dependencies**: module A imports module B which imports module A.
-- **Premature abstraction**: an interface or base class with only one implementation.
-- **God object**: a class that knows about or orchestrates everything.
-
-## DRY in Practice
-
-The rule is not "never write similar code twice". It is: **duplication of knowledge is the problem, not duplication of text**.
-
-- If two pieces of code look alike but represent different concepts, keep them separate.
-- If two pieces of code represent the **same rule or decision**, extract it — one change should update both.
-- The right moment to extract is when you are writing the **third** instance, not the second.
-
-## How to Apply
-
-1. Read `CLAUDE.md` and `MEMORY.md` for project-specific patterns before designing.
-2. Sketch the layer placement of the new code before writing it.
-3. Run through the checklist above.
-4. If you identify a red flag, surface it to the user before proceeding — do not paper over it.
-5. Document significant architecture decisions in the plan doc or task file.
+Document significant decisions in the plan or task file.

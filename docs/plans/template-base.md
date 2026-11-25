@@ -21,7 +21,8 @@ platform is then created from it.
 | Deployment | One app image (FastAPI serves the API and the built frontend) + PostgreSQL | Two containers in Synology Container Manager |
 | Web access | HTTPS through a reverse proxy by default (`Secure` cookies); `COOKIE_SECURE=false` only for plain-HTTP setups | Synology DSM reverse proxy in front |
 | UI library | Mantine (components, forms, notifications, light/dark built in) | Chosen by the user on 2026-11-25 over own CSS, shadcn/ui and MUI |
-| Claude workflow | nexus-home's autonomous workflow; backported to `dotclaude` afterwards | One workflow everywhere |
+| Claude workflow | nexus-home's autonomous workflow; ~~backported to `dotclaude` afterwards~~ (superseded below) | One workflow everywhere |
+| dotclaude (2026-11-26) | Retired by the user; this template is the single base (Claude setup + stack skills + login app). The backport is cancelled; T014 absorbs what was left | One repository to maintain |
 
 ## Design
 
@@ -126,7 +127,8 @@ social login; multi-tenant; anything domain-specific.
 10. Production image, compose, Makefile, pre-commit hook.
 11. CI (lint, unit, E2E, audit, image publishing) and the weekly workflows.
 12. Skills and docs for the stack; README "use this template".
-13. Backport the autonomous workflow to `dotclaude` (separate PR there).
+13. ~~Backport the autonomous workflow to `dotclaude`~~ — dotclaude is retired: absorb what it still
+    had and drop the references to it (T014).
 
 ## Testing strategy
 

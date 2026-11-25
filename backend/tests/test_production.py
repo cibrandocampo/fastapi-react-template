@@ -260,24 +260,57 @@ async def test_security_middleware_passes_other_scopes_through():
     assert seen == ["lifespan", "lifespan"]
 
 
-def test_access_log_drops_query_strings():
+def _access_record(msg, args):
     import logging
 
-    from app.core.logging import DropQueryString, configure_access_log
+    record = logging.LogRecord("uvicorn.access", logging.INFO, "", 0, msg, None, None)
+    record.args = args
+    return record
 
-    record = logging.LogRecord(
-        "uvicorn.access", logging.INFO, "", 0, '%s - "%s %s HTTP/%s" %d', None, None
+
+def test_access_log_drops_query_strings():
+    from app.core.logging import DropQueryString
+
+    record = _access_record(
+        '%s - "%s %s HTTP/%s" %d', ("1.2.3.4:5", "GET", "/api/users?q=ana@example.com", "1.1", 200)
     )
-    record.args = ("1.2.3.4:5", "GET", "/api/users?q=ana@example.com", "1.1", 200)
 
     assert DropQueryString().filter(record) is True
     assert record.getMessage() == '1.2.3.4:5 - "GET /api/users HTTP/1.1" 200'
 
-    other = logging.LogRecord("uvicorn.access", logging.INFO, "", 0, "plain %s", ("x",), None)
-    DropQueryString().filter(other)
-    assert other.getMessage() == "plain x"
+
+def test_access_log_filter_leaves_other_records_alone():
+    from app.core.logging import DropQueryString
+
+    record = _access_record("plain %s", ("x",))
+    DropQueryString().filter(record)
+
+    assert record.getMessage() == "plain x"
+
+
+def test_access_log_filter_is_installed_once():
+    import logging
+
+    from app.core.logging import DropQueryString, configure_access_log
 
     configure_access_log()
     configure_access_log()
+
     filters = logging.getLogger("uvicorn.access").filters
     assert sum(isinstance(f, DropQueryString) for f in filters) == 1
+
+
+async def test_a_build_without_assets_still_serves_pages(tmp_path, monkeypatch):
+    (tmp_path / "index.html").write_text("<!doctype html><title>SPA</title>")
+    monkeypatch.setenv("STATIC_DIR", str(tmp_path))
+    from app.core.config import get_settings
+
+    get_settings.cache_clear()
+    try:
+        app = create_app()
+    finally:
+        get_settings.cache_clear()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get("/profile")
+
+    assert "<title>SPA</title>" in response.text

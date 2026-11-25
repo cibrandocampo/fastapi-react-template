@@ -35,7 +35,7 @@ jobs:
           } > "$FILE"
 
       - name: Open a pull request when the list changed
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           branch: chore/sync-disposable-email-domains
           commit-message: "chore(auth): sync disposable email domains"

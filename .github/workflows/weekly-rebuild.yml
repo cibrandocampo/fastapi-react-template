@@ -36,7 +36,12 @@ jobs:
             echo "ref=main" >> "$GITHUB_OUTPUT"
             echo "tags=$IMAGE:latest" >> "$GITHUB_OUTPUT"
           else
-            tag=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName 2>/dev/null || true)
+            # No release yet is a normal skip; any other API error fails the job.
+            err="$RUNNER_TEMP/release-view.err"
+            if ! tag=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName 2>"$err"); then
+              grep -qi "release not found" "$err" || { cat "$err"; exit 1; }
+              tag=""
+            fi
             if [ -z "$tag" ]; then
               echo "No release yet: no stable image to rebuild."
               echo "skip=true" >> "$GITHUB_OUTPUT"

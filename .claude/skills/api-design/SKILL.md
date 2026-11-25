@@ -1,112 +1,94 @@
 ---
 name: api-design
-description: REST API design conventions — URL structure, HTTP semantics, response format, error handling, and versioning. Use when designing or reviewing API endpoints.
+description: REST conventions of this API — routes under /api, the error envelope and codes, pagination, auth headers, validation. Use when adding or reviewing endpoints.
 ---
 
 # API Design
 
-## URL Structure
+## Routes
 
-- **Lowercase, hyphen-separated**: `/api/user-profiles/`, not `/api/userProfiles/`
-- **Nouns, not verbs**: `/api/orders/`, not `/api/getOrders/`
-- **Plural resources**: `/api/orders/`, `/api/orders/{id}/`
-- **Nested resources** only when the relationship is strong and the child never exists without the parent: `/api/orders/{id}/items/`
-- **Trailing slash**: be consistent — pick one convention and enforce it everywhere
-- **Versioning**: prefix with `/api/v1/` if breaking changes are anticipated
+- Everything under `/api`; one router per package with its prefix (`/api/auth`, `/api/users`).
+- Plural nouns, lowercase with hyphens, **no trailing slash** (`redirect_slashes=False`: `/api/users/`
+  is a 404, not a redirect). Actions that are not CRUD are sub-paths: `POST /api/users/{id}/set-password`,
+  `POST /api/auth/change-password`.
+- Integer ids (`/api/users/{user_id}`): admin-only API, enumeration is not a concern there. Use opaque
+  ids if a resource is ever exposed to non-admins.
+- `/api/docs` and `/api/openapi.json` exist outside production only.
 
-## HTTP Methods
+## Methods and statuses
 
-| Method | Use | Body | Idempotent |
-|--------|-----|------|-----------|
-| `GET` | Read — list or detail | None | Yes |
-| `POST` | Create | Required | No |
-| `PUT` | Full replace | Required | Yes |
-| `PATCH` | Partial update | Required | Yes |
-| `DELETE` | Remove | None | Yes |
+| | |
+|---|---|
+| `GET` list/detail → 200 | `POST` create → 201 (with the resource) |
+| `PATCH` partial update → 200 (with the resource) | `DELETE` → 204 |
+| action endpoints → 200 with a body, or 204 | |
 
-Never use `GET` for operations with side effects. Never use `POST` for reads.
+Errors in use:
 
-## Status Codes
+| Status | Codes |
+|---|---|
+| 400 | `invalid_request`, `invalid_credentials`, `weak_password`, `password_required`, `password_not_allowed`, `method_mismatch`, `disposable_email` |
+| 401 | `unauthorized`, `token_expired`, `refresh_in_progress` (another tab is rotating: retry) |
+| 403 | `forbidden`, `account_disabled` |
+| 404 | `user_not_found`, `not_found` |
+| 405 | `method_not_allowed` (wrong method on an existing route) |
+| 409 | `email_taken`, `last_admin`, `cannot_delete_self` |
+| 422 | `validation_error` |
+| 429 | `rate_limited` (with `Retry-After`), `locked` (password lockout) |
+| 500 / 503 | `internal_error` / `database_unavailable` |
 
-| Code | When to use |
-|------|-------------|
-| `200 OK` | Successful GET, PATCH, PUT |
-| `201 Created` | Successful POST that creates a resource |
-| `204 No Content` | Successful DELETE or action with no response body |
-| `400 Bad Request` | Validation error — the client sent invalid data |
-| `401 Unauthorized` | Not authenticated |
-| `403 Forbidden` | Authenticated but not authorised |
-| `404 Not Found` | Resource does not exist |
-| `409 Conflict` | State conflict (e.g. duplicate, version mismatch) |
-| `422 Unprocessable Entity` | Semantically invalid request (use sparingly; prefer 400) |
-| `500 Internal Server Error` | Unexpected server failure |
+A Starlette `HTTPException` would map to `bad_request` (400) or the generic `http_error`; no endpoint
+raises one — use `AppError`.
 
-Never return `200` with an error body. Never return `500` for client mistakes.
-
-## Response Format
-
-### Success — list
+## Error envelope (every non-2xx answer)
 
 ```json
-{
-  "results": [...],
-  "count": 42,
-  "next": "https://api.example.com/api/v1/orders/?page=3",
-  "previous": "https://api.example.com/api/v1/orders/?page=1"
-}
+{"error": {"code": "email_taken", "message": "A user with this email already exists"}}
+{"error": {"code": "validation_error", "message": "Invalid request",
+           "details": [{"loc": ["body", "email"], "message": "..."}]}}
 ```
 
-### Success — single resource
+- Raise `AppError(status, code, message)` (`core/errors.py`); never `HTTPException` with a free text.
+- `code` is stable `snake_case` and the frontend translates it (`login.errors.*`, `users.errors.*`,
+  `profile.password.errors.*`) — add the three translations with every new code.
+- `message` is for developers (English); never user data, SQL or tracebacks. Unhandled exceptions
+  become `internal_error` with the traceback in the log only.
+
+## Bodies
+
+- Pydantic schemas per package (`schemas.py`): inputs named after the action or resource
+  (`UserCreate`, `UserUpdate`, `LoginStart`, `SetPassword`), outputs end in `Out` / `Page` / `Result`
+  (`UserOut`, `UserPage`, `LoginResult`).
+  Output schemas list fields explicitly — never return a model with `password_hash`.
+- Emails are normalised (`normalise_email`) and compared case-insensitively.
+- Text inputs carry length limits and refuse NUL (`core/types.py`).
+- Datetimes are ISO 8601 UTC. Booleans are booleans. Optional fields are present as `null`.
+
+## Lists and pagination
+
+`GET /api/users?q=&role=&active=&page=1&size=20` →
 
 ```json
-{
-  "id": "uuid-or-int",
-  "field": "value",
-  "created_at": "2025-01-15T10:30:00Z"
-}
+{"items": [...], "total": 42, "page": 1, "size": 20}
 ```
 
-### Error
+`page` ≥ 1, `size` 1–100 (default 20). Filters are query parameters named like the field. Every list
+endpoint is paginated.
 
-```json
-{
-  "error": "Human-readable message for the developer",
-  "code": "SNAKE_CASE_ERROR_CODE",
-  "details": {
-    "field_name": ["Specific validation message"]
-  }
-}
-```
+## Auth
 
-- `error`: always present, human-readable
-- `code`: always present, machine-readable constant (use in client error handling)
-- `details`: optional, for field-level validation errors
+- `Authorization: Bearer <access token>` on every protected call. Routers use the aliases in
+  `auth/deps.py`: `CurrentUser` (any active account, role `none` included), `RequireUser`
+  (`require_role(Role.user)`: user or admin) and `RequireAdmin` (`require_role(Role.admin)`).
+  `require_role` takes one minimum role; admin passes every check.
+- Session endpoints use the `refresh_token` cookie (path `/api/auth`) — only `/api/auth/refresh` and
+  `/logout` read it.
+- 401 means "refresh and retry once" to the client (`api/client.js` does it); 403 is final.
 
-## Conventions
+## Checklist for a new endpoint
 
-### Dates and times
-- Always ISO 8601 UTC: `"2025-01-15T10:30:00Z"`
-- Never timestamps, locale-formatted strings, or ambiguous formats
-
-### IDs
-- Expose UUIDs or opaque strings to clients — never auto-increment integers that reveal record counts
-- Exception: internal/admin APIs where leaking record counts is acceptable
-
-### Booleans and nulls
-- Use explicit `true`/`false`, never `1`/`0` or `"yes"`/`"no"`
-- Avoid returning `null` for missing optional fields — omit the key or return an empty value appropriate to the type
-
-### Pagination
-- Always paginate list endpoints — never return unbounded lists
-- Default page size: document it; enforce a maximum
-
-### Filtering and sorting
-- Filters as query params: `?status=active&created_after=2025-01-01`
-- Sorting: `?ordering=created_at` or `?ordering=-created_at` (prefix `-` for descending)
-
-## What NOT to Do
-
-- Don't put actions in URLs: `/api/orders/123/cancel/` is acceptable as a special action, but prefer `PATCH /api/orders/123/` with `{"status": "cancelled"}` when the state change is simple
-- Don't leak internal implementation details (table names, ORM errors, stack traces) in responses
-- Don't design endpoints around your ORM models — design around what the client needs
-- Don't invent new conventions when an established one exists
+- [ ] Role dependency; tests for anonymous (401), wrong role (403) and the happy path.
+- [ ] Every `AppError` code has a test and a translation.
+- [ ] Rate limit if it sends email, checks a secret or is expensive (`core/ratelimit.py`).
+- [ ] Locks when it reads then writes shared rows (backend-patterns → Concurrency).
+- [ ] The frontend client function and its MSW handler in tests.

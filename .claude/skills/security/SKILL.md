@@ -1,70 +1,62 @@
 ---
 name: security
-description: Security checklist to review before committing code. Use before any commit that adds or modifies user input handling, authentication, data access, API endpoints, dependencies, or file operations.
+description: Security model of this template (sessions, cookies, roles, rate limits, headers, secrets, logs) and the checklist to run before committing. Use before any commit that touches auth, user input, data access, endpoints, dependencies, headers or deployment. For a full audit use the security-audit skill.
 ---
 
 # Security
 
-Run this checklist against your diff before committing. If any item fails, fix it — do not commit and flag it later.
+## The model — keep it intact
 
-## Secrets & Credentials
+| Area | What is in place | Where |
+|---|---|---|
+| Access token | JWT HS256, 15 min, **memory only** in the SPA, `Authorization: Bearer` | `core/security.py`, `api/client.js` |
+| Refresh token | 256-bit random, stored SHA-256, rotated on every use, family revoked on reuse (10 s grace for parallel tabs); cookie `HttpOnly; SameSite=Strict; Path=/api/auth` (+ `Secure`) | `auth/sessions.py` |
+| CSRF | Not needed: state-changing API calls need the Bearer header; the cookie is SameSite=Strict and only read by refresh/logout | — |
+| Login | Email code (6 digits, hashed, 10 min, 5 attempts) or password (bcrypt 12); lockout 5 failures / 15 min under a row lock. With sign-up off, the email step says when no account exists (`user_not_found`) — an accepted usability trade-off, limited by the per-IP rate limit | `auth/router.py`, `auth/otp.py` |
+| Cookie `Secure` | Follows `COOKIE_SECURE` (true by default; false only for plain-HTTP setups such as e2e) | `auth/sessions.py` |
+| Sign-up | Only with `ALLOW_SELF_SIGNUP`; new accounts have role `none`; disposable domains blocked; unconfirmed sign-ups deleted after 7 days | `auth/`, `core/scheduler.py` |
+| Roles | `none` < `user` < `admin`, checked server-side on every route (`require_role`); last active admin protected | `auth/deps.py`, `users/service.py` |
+| Rate limits | Per IP: login start (10/h), code/password check (10/min), refresh (30/min). Per account: code emails (3/h), password change (5/h) | `core/ratelimit.py` |
+| Client IP | `X-Forwarded-For` only from `TRUSTED_PROXIES`; uvicorn runs with `--no-proxy-headers` | `core/ratelimit.py`, `backend/entrypoint.sh` |
+| Headers | CSP (`script-src 'self'`, no inline scripts; `style-src 'unsafe-inline'` for Mantine), `frame-ancestors 'none'`, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, `COOP`; HSTS is the proxy's job | `core/headers.py` |
+| Errors | Envelope only; unhandled errors → `internal_error`, traceback in the log | `core/errors.py` |
+| Logs | Ids only; no emails, names, codes, tokens; access log without query strings. A 500's traceback ends with the exception message, so exceptions raised on purpose never carry user input | `core/logging.py`, `core/errors.py` |
+| Secrets | `SECRET_KEY` default or < 32 bytes refused in production; `.env` git-ignored | `core/config.py`, `app/preflight.py` |
+| Static files | Only direct children of the build dir; NUL and traversal refused | `app/spa.py` |
+| Container | Non-root (uid 10001), read-only root fs, no capabilities, `no-new-privileges` | `Dockerfile`, `docker-compose.yml` |
 
-- [ ] No hardcoded passwords, API keys, tokens, or secrets in code or config files.
-- [ ] No secrets in commit messages, comments, or log statements.
-- [ ] Sensitive configuration comes from environment variables, not source code.
-- [ ] `.env` files are in `.gitignore` and never committed.
+## Checklist for every change
 
-## Input Validation
+### Secrets
+- [ ] No secret in code, tests, fixtures, commits, logs or task evidence. Test values are obviously fake.
+- [ ] New secrets come from settings, documented in `.env.example` (placeholder) and `docs/configuration.md`.
 
-- [ ] All user input is validated at the boundary (type, length, format, range).
-- [ ] Never trust data from external sources (HTTP requests, files, environment, query params).
-- [ ] Validation happens server-side — client-side validation is UX only, not security.
-- [ ] File uploads: validate type, size, and name. Never use the user-supplied filename directly.
+### Input
+- [ ] Every input has a type, length limit and format (Pydantic; `core/types.py`); NUL refused in text.
+- [ ] No raw SQL built from input; SQLAlchemy expressions or bound parameters only.
+- [ ] No user-controlled path, URL or template name reaches the filesystem, network or Jinja.
 
-## Injection
+### Access
+- [ ] Every new route has `current_user` or `require_role(...)`; tests for 401 and 403.
+- [ ] Admin actions that could lock everyone out keep the last-admin guard.
+- [ ] Rules that read then write run under the row locks (backend-patterns → Concurrency).
+- [ ] Endpoints that send email, check a secret or are expensive have a rate limit.
 
-- [ ] No raw SQL with user input — use parameterised queries or ORM.
-- [ ] No shell commands constructed from user input — if unavoidable, use safe APIs with argument lists, never string interpolation.
-- [ ] No template rendering with unescaped user data (XSS).
-- [ ] No `eval()`, `exec()`, or dynamic code execution with external input.
+### Data exposure
+- [ ] Output schemas list their fields; no hashes, tokens or internal flags.
+- [ ] Error messages reveal nothing about other accounts beyond what the flow requires.
+- [ ] Logs: ids, never personal data or secrets.
 
-## Authentication & Authorisation
+### Frontend
+- [ ] No token or personal data in `localStorage`/`sessionStorage` (only UI preferences).
+- [ ] No `dangerouslySetInnerHTML`, no inline `<script>`, nothing that needs a CSP exception.
+- [ ] External links use `rel="noopener noreferrer"`.
 
-- [ ] Every endpoint that requires authentication actually checks it.
-- [ ] Authorisation checks verify the caller owns or has permission to access the resource (not just that they are logged in).
-- [ ] Sensitive operations require re-authentication or elevated checks where appropriate.
-- [ ] No security-by-obscurity: hidden URLs or fields are not access control.
-- [ ] CSRF protection is in place for any state-changing request made via browser (cookies/sessions). Token-based APIs using `Authorization` header are exempt.
-- [ ] Rate limiting is applied to authentication endpoints (login, password reset, token refresh) and any expensive or sensitive operation.
+### Dependencies and deployment
+- [ ] New dependencies are necessary, maintained and pinned (`make lock` / lockfiles).
+- [ ] Container hardening, CSP and headers unchanged unless the change is the point — then justified.
 
-## Data Exposure
+## How to apply
 
-- [ ] API responses do not leak internal fields, stack traces, or system information.
-- [ ] Error messages are generic for the user; detail goes to server logs only.
-- [ ] Sensitive fields (passwords, tokens, PII) are not serialised into responses or logs.
-- [ ] Pagination and filtering respect authorisation — a user cannot enumerate records they don't own.
-
-## Dependencies
-
-- [ ] New dependencies are well-maintained, widely used, and necessary.
-- [ ] No dependency added just for convenience when the standard library covers the need.
-- [ ] Pinned versions in lockfiles are not blindly upgraded without reviewing the changelog.
-
-## HTTP Security Headers (frontend / server)
-
-- [ ] `Content-Security-Policy` is set and restricts `script-src` to known origins. No `unsafe-inline` or `unsafe-eval` unless explicitly justified.
-- [ ] `X-Content-Type-Options: nosniff` is set.
-- [ ] `X-Frame-Options: DENY` (or `SAMEORIGIN`) is set to prevent clickjacking.
-- [ ] `Strict-Transport-Security` is set in production (HTTPS only).
-
-## File & Path Handling
-
-- [ ] User-supplied paths are validated and confined to an allowed directory (no path traversal).
-- [ ] Temporary files are cleaned up and not world-readable.
-
-## How to Apply
-
-1. Run `git diff --staged` and read every changed line.
-2. Go through the checklist above — each item takes seconds.
-3. If anything is uncertain, err on the side of caution: ask before committing.
-4. Document any accepted risk explicitly in a comment near the code and in the PR Notes section.
+Read `git diff` line by line against the checklist. If something is uncertain, ask before committing.
+Accepted risks are written next to the code and in the task file.

@@ -18,7 +18,8 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  # Only a newer push to the same PR makes a run pointless; main and releases always finish.
+  # Only a newer push to the same PR cancels a running PR run; main and release runs are never
+  # cancelled once started (GitHub may still drop a queued one when a newer run of the group queues).
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
@@ -156,10 +157,12 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: ${{ vars.DOCKER_IMAGE || 'app' }}
+          # Without this the action adds `latest` to every semver release; `latest` is main only.
+          flavor: latest=false
           tags: |
             type=raw,value=latest,enable=${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
             type=semver,pattern={{version}},enable=${{ github.event_name == 'release' }}
-            type=raw,value=stable,enable=${{ github.event_name == 'release' }}
+            type=raw,value=stable,enable=${{ github.event_name == 'release' && !github.event.release.prerelease }}
             type=ref,event=pr
 
       - name: Build (and push when allowed)
