@@ -20,6 +20,7 @@ platform is then created from it.
 | Included | Languages en/es/gl, user management UI, light/dark theme, Docker dev + prod, CI, E2E | Everything a project needs on day one |
 | Deployment | One app image (FastAPI serves the API and the built frontend) + PostgreSQL | Two containers in Synology Container Manager |
 | Web access | HTTPS through a reverse proxy by default (`Secure` cookies); `COOKIE_SECURE=false` only for plain-HTTP setups | Synology DSM reverse proxy in front |
+| UI library | Mantine (components, forms, notifications, light/dark built in) | Chosen by the user on 2026-11-25 over own CSS, shadcn/ui and MUI |
 | Claude workflow | nexus-home's autonomous workflow; backported to `dotclaude` afterwards | One workflow everywhere |
 
 ## Design
@@ -77,8 +78,9 @@ Makefile            init, dev-*, test, lint, format, e2e, lock, db-*
 
 ### Frontend
 
-- React + Vite, React Router, TanStack Query, i18next (en/es/gl: browser language, then the user's
-  saved one), CSS custom properties for the light/dark theme (`system` follows the OS), ESLint + Prettier.
+- React + Vite, React Router, TanStack Query, Mantine (`@mantine/core`, `@mantine/form`,
+  `@mantine/notifications`; its colour-scheme manager for light/dark/`system`), i18next (en/es/gl: browser
+  language, then the user's saved one), ESLint + Prettier.
 - API client: attaches the access token, refreshes once on 401 (shared between parallel requests),
   sends the user to `/login` when the refresh fails.
 - Pages: login (email → code or password → name for new users, 30 s resend cooldown), waiting for

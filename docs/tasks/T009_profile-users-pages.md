@@ -10,7 +10,8 @@ Name, language and theme (saved immediately, applied at once), password: change 
 set one (OTP users, switching to password login). User menu in the header links here and to logout.
 
 ## Step 2 — Users page (`/admin/users`, admin only)
-Table with search and filters (role, active), pagination; "pending" badge and one-click "Grant access"
+Mantine `Table`, `Modal`, `@mantine/form` and notifications. Table with search and filters (role, active),
+pagination; "pending" badge and one-click "Grant access"
 for role `none`; create user dialog; edit dialog (names, role, active, method, language); set password;
 delete with confirmation. Guard errors (`last_admin`, `cannot_delete_self`, `email_taken`) shown
 translated. Navigation entry visible to admins only.

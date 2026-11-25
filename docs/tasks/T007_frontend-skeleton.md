@@ -10,7 +10,8 @@ A Vite + React app in `frontend/` served at `localhost:15173` with routing, API 
 an app shell, and lint/format/test tooling in Docker.
 
 ## Step 1 — Tooling
-Node 24 LTS, Vite, React 19, React Router, TanStack Query, i18next + react-i18next +
+Node 24 LTS, Vite, React 19, React Router, TanStack Query, Mantine (`@mantine/core`, `@mantine/hooks`,
+`@mantine/form`, `@mantine/notifications`, PostCSS preset), i18next + react-i18next +
 browser language detector, ESLint (flat config, react-hooks, jsx-a11y), Prettier, vitest + jsdom +
 Testing Library + msw, v8 coverage with thresholds 95/90/95/95. `dev/Dockerfile.frontend`, `frontend`
 service in the dev compose (port 15173, `/api` proxied to the backend). npm scripts: `dev`, `build`,
@@ -25,16 +26,17 @@ service in the dev compose (port 15173, `/api` proxied to the backend). npm scri
   one tab refreshes at a time; refresh failure → clear session and go to `/login`; errors thrown as
   `ApiError(status, code, message)` from the `{"error": {...}}` envelope.
 - `src/i18n/`: en/es/gl JSON, fallback en, detection localStorage → navigator.
-- `src/theme/`: `data-theme` on `<html>` (absent for `system`), CSS custom properties for both themes,
-  cached choice applied before first render (no inline script, CSP-friendly).
-- `src/styles/`: tokens (colours, spacing, radius, typography) and base styles; CSS modules for components.
-- App shell: header with app name, navigation slot and user menu placeholder; `HomePage` placeholder;
-  `NotFoundPage`.
+- `src/theme.js`: the Mantine theme (primary colour, radius, fonts) — the single place a project changes
+  its look. Colour scheme light/dark/`auto` through Mantine's colour-scheme manager (localStorage), synced
+  with the user's `theme` after login; no inline script (CSP-friendly).
+- CSS modules only for the few layout pieces Mantine does not cover.
+- App shell: Mantine `AppShell` with header (app name, navigation, user menu placeholder); `HomePage`
+  placeholder; `NotFoundPage`. Notifications provider for API errors.
 
 ## DoD
 1. `make dev-up` serves the app at `localhost:15173`; `/api/health` works through the proxy.
 2. Tests: client refresh-and-retry, shared refresh for parallel 401s, refresh failure redirect, error
-   parsing; language detection and fallback; theme application and cache.
+   parsing; language detection and fallback; colour scheme switch and persistence.
 3. `make lint-frontend` (eslint --max-warnings 0 + prettier check) clean; coverage thresholds met;
    `npm run build` succeeds.
 

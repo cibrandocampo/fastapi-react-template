@@ -16,7 +16,7 @@ permissions sees a waiting page; routes are protected by session and role.
 (role `none` → `/waiting`, insufficient → 404 page). `/login`, `/waiting`, and the shell routes.
 
 ## Step 3 — Login page
-Steps: email → code (6-digit input, 30 s resend cooldown, back) or password → name (new users).
+Mantine components (`PinInput` for the code). Steps: email → code (6-digit input, 30 s resend cooldown, back) or password → name (new users).
 Heading "Sign in" or "Sign in or create an account" from `/config`. Every API error code mapped to a
 translated message (`user_not_found`, `disposable_email`, `invalid_credentials`, `method_mismatch`,
 `locked`, `rate_limited`, `account_disabled`). Accessible labels and focus management.
