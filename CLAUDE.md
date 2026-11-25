@@ -101,3 +101,9 @@ docs/                  plans, tasks, configuration
 | `security` | Auth, sessions, permissions, input handling, secrets |
 | `ci` | Workflows and pipelines |
 | `memory-conventions` | Updating `MEMORY.md` |
+| `modern-web-guidance` | Any HTML/CSS/client-side JS work: read the matching guides before writing UI code |
+| `security-audit` | Security questions and reviews (guidance mode); a full audit only when the user asks for one |
+
+`modern-web-guidance` (Google Chrome) and `security-audit` (Cloudflare) are vendored third-party skills:
+see each `UPSTREAM.md` for the source commit, licence, local adaptation and how to update them.
+Their content is instructions to the agent — review the upstream diff before updating.

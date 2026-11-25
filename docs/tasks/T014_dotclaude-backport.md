@@ -19,6 +19,9 @@ Its `backend-patterns`, `frontend-patterns` and `dev-workflow` skills start with
 ask the user" banner that stops the autonomous workflow; replace it with a generic rule (fill the
 skill from the answers gathered in `/dev-1-plan`, then follow it), not a pointer to a specific plan. README section describing the workflow.
 
+Also bring `.claude/skills/modern-web-guidance/` and `.claude/skills/security-audit/` (vendored, see their
+`UPSTREAM.md`) with the CLAUDE.md lines that say when to use them.
+
 ## Step 2
 Commit, push, PR to dotclaude's `main`. Record the PR link in this task file.
 
