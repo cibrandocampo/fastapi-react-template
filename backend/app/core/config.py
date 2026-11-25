@@ -11,6 +11,11 @@ class Settings(BaseSettings):
 
     env: Literal["development", "test", "production"] = "production"
     app_name: str = "App"
+    # Set by the image build (`APP_VERSION` build arg) and reported by /api/health.
+    app_version: str = "dev"
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+    # Built frontend served by the API (the production image copies it here); absent in development.
+    static_dir: str = "/app/static"
     database_url: str = "postgresql+asyncpg://app:app@db:5432/app"
 
     # Sessions
@@ -55,6 +60,32 @@ class Settings(BaseSettings):
     # First administrator, created at start-up when no admin exists
     admin_email: str | None = None
     admin_password: str | None = None
+
+
+DEFAULT_SECRET_KEY = Settings.model_fields["secret_key"].default
+MIN_SECRET_BYTES = 32
+
+
+def production_problems(settings: Settings) -> list[str]:
+    """What makes these settings unsafe to run in production (empty outside production)."""
+    if settings.env != "production":
+        return []
+    problems = []
+    if settings.secret_key == DEFAULT_SECRET_KEY:
+        problems.append("SECRET_KEY is the default placeholder")
+    elif len(settings.secret_key.encode()) < MIN_SECRET_BYTES:
+        problems.append(f"SECRET_KEY is shorter than {MIN_SECRET_BYTES} bytes")
+    return problems
+
+
+def ensure_production_ready(settings: Settings) -> None:
+    problems = production_problems(settings)
+    if problems:
+        raise RuntimeError(
+            "Refusing to start in production: "
+            + "; ".join(problems)
+            + ". Set a long random SECRET_KEY (for example: openssl rand -hex 32)."
+        )
 
 
 @lru_cache

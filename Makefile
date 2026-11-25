@@ -3,12 +3,17 @@ DC      := docker compose --env-file .env -f dev/docker-compose.yml
 BACKEND := $(DC) exec -T backend
 FRONTEND := $(DC) exec -T frontend
 PY_IMG  := python:3.14-slim
+# Production stack (docker-compose.yml) and the image `make build` produces.
+PROD    := docker compose --env-file .env -f docker-compose.yml
+IMAGE   ?= $(shell sed -n 's/^DOCKER_IMAGE=//p' .env 2>/dev/null)
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 export HOST_UID := $(shell id -u)
 export HOST_GID := $(shell id -g)
 
 .PHONY: help init dev-up dev-down dev-logs dev-ps lock db-migrate db-revision \
         test-backend coverage-backend lint-backend format-backend \
-        test-frontend lint-frontend format-frontend build-frontend test lint
+        test-frontend lint-frontend format-frontend build-frontend test lint \
+        build up down logs pull qa e2e hooks
 
 help: ## List targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-18s %s\n", $$1, $$2}'
@@ -69,3 +74,30 @@ build-frontend: ## Production build of the frontend (checks it compiles)
 test: coverage-backend test-frontend ## All unit tests
 
 lint: lint-backend lint-frontend ## All linters
+
+qa: lint test ## Everything CI checks: linters and unit tests
+
+e2e: ## End-to-end tests (T011)
+	@echo "End-to-end tests arrive in T011." && exit 1
+
+hooks: ## Install the git pre-commit hook (lint of staged files in the dev containers)
+	sh scripts/install-hooks.sh
+
+# --- Production image and stack -----------------------------------------------------------
+
+build: ## Build the production image as $(DOCKER_IMAGE):local
+	@test -n "$(IMAGE)" || { echo "Set DOCKER_IMAGE in .env"; exit 1; }
+	docker build --build-arg APP_VERSION=$(VERSION) -t $(IMAGE):local .
+
+up: ## Start the production stack (APP_TAG=local runs the image from `make build`)
+	$(PROD) up -d --wait
+
+down: ## Stop the production stack
+	$(PROD) down
+
+logs: ## Follow the production stack logs
+	$(PROD) logs -f
+
+pull: ## Pull the production images (APP_TAG from .env)
+	$(PROD) pull
+

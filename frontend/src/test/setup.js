@@ -1,12 +1,16 @@
 import '@testing-library/jest-dom/vitest';
 
 import { notifications } from '@mantine/notifications';
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
 import { afterAll, afterEach, beforeAll } from 'vitest';
 
 import { setAccessToken } from '../api/client';
 import i18n from '../i18n';
 import { server } from './server';
+
+// The first render of a file (Mantine, coverage instrumentation, a loaded container) can take more
+// than the default 1 s that findBy/waitFor wait.
+configure({ asyncUtilTimeout: 3000 });
 
 // jsdom lacks APIs Mantine uses.
 window.matchMedia ??= (query) => ({
@@ -26,7 +30,12 @@ globalThis.ResizeObserver ??= class {
 };
 Element.prototype.scrollIntoView ??= () => {};
 
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+beforeAll(async () => {
+  server.listen({ onUnhandledRequest: 'error' });
+  // Lazy pages (App.jsx): import them once up front so a test's first render does not wait for the
+  // module to be transformed.
+  await Promise.all([import('../pages/ProfilePage'), import('../pages/admin/UsersPage')]);
+});
 afterEach(async () => {
   cleanup();
   // Notifications live in a module-level store that outlives each render.

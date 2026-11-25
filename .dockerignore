@@ -1,0 +1,12 @@
+# Only what the image needs reaches the build context.
+**
+!backend/requirements.txt
+!backend/alembic.ini
+!backend/alembic/
+!backend/app/
+!backend/entrypoint.sh
+!frontend/
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+**/__pycache__/

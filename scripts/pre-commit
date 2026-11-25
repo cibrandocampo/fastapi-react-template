@@ -1,0 +1,51 @@
+#!/bin/sh
+# Git pre-commit hook (install with `make hooks`): lint and format check of the staged files,
+# run inside the dev containers — nothing runs on the host. Needs the dev stack (`make dev-up`).
+# It checks the files as they are in the main checkout's working tree (the containers mount it, so in a
+# git worktree it would check the wrong copies); stage what you checked.
+# Skip once with `git commit --no-verify`.
+set -eu
+
+cd "$(git rev-parse --show-toplevel)"
+DC="docker compose --env-file .env -f dev/docker-compose.yml"
+
+staged() {
+  git diff --cached --name-only --diff-filter=ACMR -- "$@"
+}
+
+py=$(staged 'backend/*.py' | sed 's|^backend/||')
+web=$(staged 'frontend/*.js' 'frontend/*.jsx' 'frontend/*.json' 'frontend/*.css' 'frontend/*.html' \
+  | sed 's|^frontend/||')
+js=$(printf '%s\n' "$web" | grep -E '\.jsx?$' || true)
+
+[ -z "$py$web" ] && exit 0
+
+running=$($DC ps --services --status running 2>/dev/null || true)
+need() {
+  printf '%s\n' "$running" | grep -qx "$1" || {
+    echo "pre-commit: the dev '$1' container is not running. Start it with 'make dev-up'," >&2
+    echo "or skip the check once with 'git commit --no-verify'." >&2
+    exit 1
+  }
+}
+
+status=0
+if [ -n "$py" ]; then
+  need backend
+  # shellcheck disable=SC2086 # one argument per file
+  $DC exec -T backend sh -c 'ruff check "$@" && ruff format --check "$@"' sh $py || status=1
+fi
+if [ -n "$web" ]; then
+  need frontend
+  if [ -n "$js" ]; then
+    # shellcheck disable=SC2086
+    $DC exec -T frontend npx eslint --max-warnings 0 $js || status=1
+  fi
+  # shellcheck disable=SC2086
+  $DC exec -T frontend npx prettier --check $web || status=1
+fi
+
+if [ "$status" -ne 0 ]; then
+  echo "pre-commit: fix the problems above (make format-backend / make format-frontend)." >&2
+fi
+exit "$status"

@@ -1,4 +1,5 @@
 import { Anchor, AppShell, Container, Group } from '@mantine/core';
+import { Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Outlet } from 'react-router';
 
@@ -28,7 +29,10 @@ export function AppLayout() {
       </AppShell.Header>
       <AppShell.Main>
         <Container size={1080} pt="xl" className={classes.content}>
-          <Outlet />
+          {/* Lazy pages: the shell and the bar stay while a page's chunk loads. */}
+          <Suspense fallback={null}>
+            <Outlet />
+          </Suspense>
         </Container>
       </AppShell.Main>
       <BottomNav />

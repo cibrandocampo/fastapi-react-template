@@ -8,6 +8,21 @@ export default defineConfig({
     // In the dev stack the API runs in the backend container; the browser only talks to Vite.
     proxy: { '/api': { target: process.env.API_TARGET ?? 'http://localhost:8000' } },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Libraries change less often than the app: their own chunks stay cached across releases.
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (id.includes('@mantine')) return 'mantine';
+          if (/[\\/]node_modules[\\/](react|react-dom|react-router|scheduler)[\\/]/.test(id)) {
+            return 'react';
+          }
+          return 'vendor';
+        },
+      },
+    },
+  },
   test: {
     environment: 'jsdom',
     globals: true,

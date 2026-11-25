@@ -1,3 +1,4 @@
+import { lazy } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router';
 
 import { AuthProvider } from './auth/AuthContext';
@@ -5,12 +6,18 @@ import { AnonymousOnly, RequireRole, RequireSession } from './auth/routes';
 import { AppLayout } from './components/AppLayout';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
-import { UsersPage } from './pages/admin/UsersPage';
 import { NotFoundPage } from './pages/NotFoundPage';
-import { ProfilePage } from './pages/ProfilePage';
 import { WaitingPage } from './pages/WaitingPage';
 import { WelcomePage } from './pages/WelcomePage';
 import { Providers } from './Providers';
+
+// Pages most visits never open load on demand (their own chunks).
+const ProfilePage = lazy(() =>
+  import('./pages/ProfilePage').then((module) => ({ default: module.ProfilePage })),
+);
+const UsersPage = lazy(() =>
+  import('./pages/admin/UsersPage').then((module) => ({ default: module.UsersPage })),
+);
 
 export function AppRoutes() {
   return (

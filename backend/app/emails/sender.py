@@ -75,6 +75,7 @@ async def send_email(to: str, template: str, lang: str, context: dict) -> None:
             start_tls=settings.smtp_tls == "starttls",
             timeout=settings.smtp_timeout_seconds,
         )
-    except aiosmtplib.SMTPException, OSError:
-        log.exception("Sending the %s email failed", template)
+    except (aiosmtplib.SMTPException, OSError) as exc:
+        # SMTP errors can quote the recipient address: log the error type, not its text.
+        log.error("Sending the %s email failed: %s", template, type(exc).__name__)
         raise

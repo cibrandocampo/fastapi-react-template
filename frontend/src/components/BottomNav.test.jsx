@@ -1,4 +1,4 @@
-import { act, screen } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
@@ -27,8 +27,10 @@ describe('BottomNav', () => {
     await nav();
     await userEvent.click(screen.getByRole('link', { name: 'Profile' }));
 
-    expect(router.location.pathname).toBe('/profile');
-    expect(screen.getByRole('link', { name: 'Profile' })).toHaveAttribute('aria-current', 'page');
+    await waitFor(() => expect(router.location.pathname).toBe('/profile'));
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: 'Profile' })).toHaveAttribute('aria-current', 'page'),
+    );
     expect(screen.getByRole('link', { name: 'Users' })).toBeInTheDocument();
   });
 

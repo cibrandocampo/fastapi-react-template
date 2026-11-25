@@ -1,9 +1,16 @@
 """Error envelope shared by every API answer: {"error": {"code", "message"}}."""
 
+import logging
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
+
+from app.spa import spa_response
+
+log = logging.getLogger(__name__)
 
 HTTP_CODES = {
     400: "bad_request",
@@ -38,7 +45,12 @@ async def _app_error(_: Request, exc: AppError) -> JSONResponse:
     return JSONResponse(error_body(exc.code, exc.message), status_code=exc.status, headers=headers)
 
 
-async def _http_error(_: Request, exc: StarletteHTTPException) -> JSONResponse:
+async def _http_error(request: Request, exc: StarletteHTTPException):
+    spa_dir = getattr(request.app.state, "spa_dir", None)
+    if exc.status_code == 404 and spa_dir is not None:
+        page = spa_response(request, spa_dir)
+        if page is not None:
+            return page
     code = HTTP_CODES.get(exc.status_code, "http_error")
     return JSONResponse(
         error_body(code, str(exc.detail)), status_code=exc.status_code, headers=exc.headers
@@ -52,6 +64,41 @@ async def _validation_error(_: Request, exc: RequestValidationError) -> JSONResp
     return JSONResponse(
         error_body("validation_error", "Invalid request", details=details), status_code=422
     )
+
+
+class UnhandledErrorMiddleware:
+    """Answers an unhandled exception with the 500 envelope and logs it once.
+
+    Starlette's own handler for `Exception` runs outside every other middleware (so the response
+    would lack the security headers) and re-raises (so the server logs the traceback twice).
+    """
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        started = False
+
+        async def tracking_send(message: Message) -> None:
+            nonlocal started
+            if message["type"] == "http.response.start":
+                started = True
+            await send(message)
+
+        try:
+            await self.app(scope, receive, tracking_send)
+        except Exception as exc:
+            if started:  # too late for another answer: let the server close the connection
+                raise
+            # The traceback goes to the log; the client only learns that something failed.
+            log.error("Unhandled error on %s %s", scope["method"], scope["path"], exc_info=exc)
+            response = JSONResponse(
+                error_body("internal_error", "Internal server error"), status_code=500
+            )
+            await response(scope, receive, send)
 
 
 def register_error_handlers(app: FastAPI) -> None:
