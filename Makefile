@@ -1,12 +1,14 @@
 # Every project command runs in Docker (CLAUDE.md §9).
 DC      := docker compose --env-file .env -f dev/docker-compose.yml
 BACKEND := $(DC) exec -T backend
+FRONTEND := $(DC) exec -T frontend
 PY_IMG  := python:3.14-slim
 export HOST_UID := $(shell id -u)
 export HOST_GID := $(shell id -g)
 
 .PHONY: help init dev-up dev-down dev-logs dev-ps lock db-migrate db-revision \
-        test-backend coverage-backend lint-backend format-backend
+        test-backend coverage-backend lint-backend format-backend \
+        test-frontend lint-frontend format-frontend build-frontend test lint
 
 help: ## List targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-18s %s\n", $$1, $$2}'
@@ -51,3 +53,19 @@ lint-backend: ## Backend lint and format check
 
 format-backend: ## Format the backend and apply safe lint fixes
 	$(BACKEND) sh -c "ruff format . && ruff check --fix ."
+
+test-frontend: ## Frontend tests with coverage (fails under the thresholds)
+	$(FRONTEND) npm run test:coverage
+
+lint-frontend: ## Frontend lint and format check
+	$(FRONTEND) sh -c "npm run lint && npm run format:check"
+
+format-frontend: ## Format the frontend
+	$(FRONTEND) npm run format
+
+build-frontend: ## Production build of the frontend (checks it compiles)
+	$(FRONTEND) npm run build
+
+test: coverage-backend test-frontend ## All unit tests
+
+lint: lint-backend lint-frontend ## All linters

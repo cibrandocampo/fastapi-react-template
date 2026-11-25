@@ -69,5 +69,26 @@ services:
       timeout: 3s
       retries: 20
 
+  frontend:
+    build:
+      context: ..
+      dockerfile: dev/Dockerfile.frontend
+    environment:
+      API_TARGET: http://backend:8000
+    volumes:
+      - ../frontend:/app
+      - frontend-node-modules:/app/node_modules
+    ports:
+      - "15173:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:5173/"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
 volumes:
   db-data:
+  frontend-node-modules:

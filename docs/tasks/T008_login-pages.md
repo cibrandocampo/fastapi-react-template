@@ -21,6 +21,10 @@ Heading "Sign in" or "Sign in or create an account" from `/config`. Every API er
 translated message (`user_not_found`, `disposable_email`, `invalid_credentials`, `method_mismatch`,
 `locked`, `rate_limited`, `account_disabled`). Accessible labels and focus management.
 
+Dev note (T007 QA O9): the refresh cookie is `Secure` by default; browsers accept it on
+`http://localhost`, but check the session survives a reload in the dev stack, and set
+`COOKIE_SECURE=false` in the dev compose if a browser drops it.
+
 ## Step 4 — Waiting page
 Explains that an administrator must grant access; shows the email; links to profile and logout.
 

@@ -1,0 +1,16 @@
+{
+  "app": { "name": "App" },
+  "nav": { "home": "Inicio" },
+  "colorScheme": { "label": "Tema", "light": "Claro", "dark": "Oscuro", "auto": "Sistema" },
+  "home": { "title": "Bienvenida", "text": "Empieza a construir tu proyecto desde aquí." },
+  "notFound": {
+    "title": "Página no encontrada",
+    "text": "La página que buscas no existe.",
+    "back": "Ir a inicio"
+  },
+  "errors": {
+    "title": "Algo ha fallado",
+    "generic": "Error inesperado. Inténtalo de nuevo.",
+    "rate_limited": "Demasiados intentos. Espera un momento y vuelve a intentarlo."
+  }
+}

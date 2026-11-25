@@ -1,0 +1,16 @@
+{
+  "app": { "name": "App" },
+  "nav": { "home": "Inicio" },
+  "colorScheme": { "label": "Tema", "light": "Claro", "dark": "Escuro", "auto": "Sistema" },
+  "home": { "title": "Benvida", "text": "Comeza a construír o teu proxecto desde aquí." },
+  "notFound": {
+    "title": "Páxina non atopada",
+    "text": "A páxina que buscas non existe.",
+    "back": "Ir ao inicio"
+  },
+  "errors": {
+    "title": "Algo fallou",
+    "generic": "Erro inesperado. Téntao de novo.",
+    "rate_limited": "Demasiados intentos. Agarda un momento e volve tentalo."
+  }
+}

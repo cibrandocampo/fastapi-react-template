@@ -22,6 +22,9 @@ Logging configured for the app's own loggers (level from `LOG_LEVEL`), without p
 Unhandled exceptions are logged and answered as 500 with the error envelope
 (`internal_error`, no details leaked); tested.
 
+Bundle size: split the frontend bundle (lazy-loaded routes, Mantine/vendor chunk) so the build has no
+chunk-size warning (T007 QA O8: 563 kB single chunk).
+
 ## Step 2 — Compose and config
 `docker-compose.yml`: `app` (image `${DOCKER_IMAGE}:${APP_TAG:-stable}`, port `${APP_PORT:-8000}`,
 `restart: unless-stopped`, `read_only` with tmpfs `/tmp`, healthcheck) and `db` (postgres:17-alpine,
