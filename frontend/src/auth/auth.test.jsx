@@ -1,4 +1,4 @@
-import { act, screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Route, Routes } from 'react-router';
@@ -79,25 +79,6 @@ describe('session', () => {
     expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
   });
 
-  it('logs out from the user menu', async () => {
-    let loggedOut = false;
-    server.use(
-      withSession(),
-      http.post('/api/auth/logout', () => {
-        loggedOut = true;
-        return new HttpResponse(null, { status: 204 });
-      }),
-    );
-    renderWithProviders(<AppRoutes />);
-
-    await userEvent.click(await screen.findByRole('button', { name: 'Account menu' }));
-    expect(await screen.findByText('Ana Pérez')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('menuitem', { name: 'Log out' }));
-
-    expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
-    expect(loggedOut).toBe(true);
-  });
-
   it('logs out locally even when the server cannot be reached', async () => {
     server.use(
       withSession(makeUser({ role: 'none' })),
@@ -108,14 +89,6 @@ describe('session', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Log out' }));
 
     expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
-  });
-
-  it('shows initials from one name', async () => {
-    server.use(withSession(makeUser({ first_name: 'Ana', last_name: '' })));
-    renderWithProviders(<AppRoutes />);
-
-    const account = await screen.findByRole('button', { name: 'Account menu' });
-    expect(within(account).getByText('A')).toBeInTheDocument();
   });
 });
 

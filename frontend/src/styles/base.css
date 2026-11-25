@@ -67,7 +67,8 @@ h3 {
     .mantine-Indicator-indicator,
     .mantine-Stepper-stepIcon,
     .mantine-Stepper-stepCompletedIcon,
-    .mantine-NavLink-root[data-active]
+    .mantine-NavLink-root[data-active],
+    .mantine-SegmentedControl-root
   ) {
   --mantine-color-white: var(--app-color-on-filled);
 }
@@ -85,4 +86,14 @@ h3 {
   background-color: var(--app-color-control-border);
   border-color: var(--app-color-control-border);
   --switch-text-color: #0a0a0a;
+}
+
+/* Height of the bottom navigation bar (BottomNav); pages reserve it plus the safe area. */
+:root {
+  --nav-h: 64px;
+}
+
+/* Keyboard focus and scrolled-to targets must not end up under the bottom navigation (WCAG 2.4.11). */
+:root:has([data-bottom-nav]) {
+  scroll-padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 16px);
 }

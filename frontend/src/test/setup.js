@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom/vitest';
 
+import { notifications } from '@mantine/notifications';
 import { cleanup } from '@testing-library/react';
 import { afterAll, afterEach, beforeAll } from 'vitest';
 
@@ -28,6 +29,8 @@ Element.prototype.scrollIntoView ??= () => {};
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
 afterEach(async () => {
   cleanup();
+  // Notifications live in a module-level store that outlives each render.
+  notifications.clean();
   server.resetHandlers();
   setAccessToken(null);
   localStorage.clear();

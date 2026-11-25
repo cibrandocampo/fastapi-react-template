@@ -24,4 +24,9 @@ describe('theme', () => {
   it('underlines standalone links', () => {
     expect(theme.components.Anchor.defaultProps.underline).toBe('always');
   });
+
+  it('keeps badges in sentence case and fills the segmented control indicator', () => {
+    expect(theme.components.Badge.defaultProps.tt).toBe('none');
+    expect(theme.components.SegmentedControl.defaultProps.color).toBe('slate');
+  });
 });

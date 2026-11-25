@@ -3,7 +3,10 @@
     "name": "App"
   },
   "nav": {
-    "home": "Inicio"
+    "home": "Inicio",
+    "label": "Principal",
+    "profile": "Perfil",
+    "users": "Usuarios"
   },
   "colorScheme": {
     "label": "Tema",
@@ -29,7 +32,6 @@
     "label": "Idioma"
   },
   "user": {
-    "menu": "Menú de la cuenta",
     "logout": "Cerrar sesión"
   },
   "login": {
@@ -71,9 +73,105 @@
   "waiting": {
     "title": "Esperando acceso",
     "text": "Tu cuenta {{email}} está lista, pero una persona administradora tiene que darte acceso antes de que puedas usar la aplicación.",
-    "hint": "Podrás entrar como siempre en cuanto te den acceso."
+    "hint": "Podrás entrar como siempre en cuanto te den acceso.",
+    "profile": "Editar tu perfil"
   },
   "common": {
-    "loading": "Cargando"
+    "loading": "Cargando",
+    "cancel": "Cancelar",
+    "save": "Guardar cambios",
+    "close": "Cerrar"
+  },
+  "roles": {
+    "none": "Esperando acceso",
+    "user": "Usuario",
+    "admin": "Administración"
+  },
+  "profile": {
+    "title": "Perfil",
+    "name": "Nombre",
+    "saveName": "Guardar nombre",
+    "saved": "Perfil guardado.",
+    "preferences": "Preferencias",
+    "session": "Sesión",
+    "password": {
+      "title": "Contraseña",
+      "helpChange": "Cambia la contraseña con la que entras.",
+      "helpSet": "Entras con un código que te enviamos por correo. Crea una contraseña para entrar con ella.",
+      "current": "Contraseña actual",
+      "new": "Nueva contraseña",
+      "confirm": "Repite la nueva contraseña",
+      "rules": "Al menos 10 caracteres, no solo cifras y distinta de tu correo.",
+      "mismatch": "Las contraseñas no coinciden.",
+      "change": "Cambiar contraseña",
+      "set": "Crear contraseña",
+      "saved": "Contraseña guardada. Se han cerrado tus otras sesiones.",
+      "errors": {
+        "invalid_credentials": "La contraseña actual no es correcta.",
+        "weak_password": "Esta contraseña es demasiado débil. Revisa las reglas bajo el campo.",
+        "rate_limited": "Demasiados intentos. Espera un momento y vuelve a intentarlo.",
+        "generic": "No se ha podido guardar la contraseña. Inténtalo de nuevo."
+      }
+    }
+  },
+  "users": {
+    "title": "Usuarios",
+    "search": "Buscar",
+    "all": "Todos",
+    "role": "Rol",
+    "status": "Estado",
+    "name": "Nombre",
+    "actions": "Acciones",
+    "activeState": "Activo",
+    "inactiveState": "Desactivado",
+    "active": "Activo (puede entrar)",
+    "empty": "Ningún usuario coincide con estos filtros.",
+    "grant": "Dar acceso",
+    "granted": "{{email}} ya tiene acceso.",
+    "method": {
+      "label": "Forma de entrar",
+      "otp": "Código por correo",
+      "password": "Contraseña"
+    },
+    "create": {
+      "open": "Nuevo usuario",
+      "title": "Nuevo usuario",
+      "submit": "Crear usuario",
+      "done": "Usuario creado."
+    },
+    "edit": {
+      "title": "Editar usuario",
+      "label": "Editar {{email}}",
+      "saved": "Cambios guardados."
+    },
+    "password": {
+      "title": "Poner contraseña",
+      "label": "Poner la contraseña de {{email}}",
+      "help": "{{email}} entrará con esta contraseña. Se cerrarán sus sesiones abiertas.",
+      "submit": "Poner contraseña",
+      "saved": "Contraseña puesta."
+    },
+    "delete": {
+      "title": "Borrar usuario",
+      "label": "Borrar {{email}}",
+      "confirm": "¿Borrar {{email}}? No se puede deshacer.",
+      "submit": "Borrar",
+      "done": "{{email}} se ha borrado."
+    },
+    "pagination": {
+      "previous": "Página anterior",
+      "next": "Página siguiente"
+    },
+    "errors": {
+      "email_taken": "Ya hay un usuario con este correo.",
+      "last_admin": "Tiene que quedar al menos una persona administradora activa.",
+      "cannot_delete_self": "No puedes borrar tu propia cuenta.",
+      "password_required": "Pon una contraseña para esta forma de entrar.",
+      "weak_password": "Contraseña demasiado débil: al menos 10 caracteres, no solo cifras y distinta del correo.",
+      "user_not_found": "Este usuario ya no existe.",
+      "validation_error": "Revisa los campos e inténtalo de nuevo.",
+      "forbidden": "Ya no tienes permiso para esto.",
+      "generic": "Algo ha fallado. Inténtalo de nuevo."
+    }
   }
 }

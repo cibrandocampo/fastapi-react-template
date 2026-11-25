@@ -1,0 +1,8 @@
+/* Sections are separated by a divider, not cards (visual system: borders, no shadows). */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+  padding-top: var(--mantine-spacing-xl);
+  border-top: 1px solid var(--mantine-color-default-border);
+}

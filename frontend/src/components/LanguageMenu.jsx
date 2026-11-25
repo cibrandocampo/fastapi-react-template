@@ -1,13 +1,10 @@
 import { ActionIcon, Menu } from '@mantine/core';
-import { IconCheck, IconLanguage } from '@tabler/icons-react';
+import { Check, Languages } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { notifyError } from '../api/queryClient';
 import { useAuth } from '../auth/useAuth';
-import { LANGUAGES } from '../i18n';
-
-// Language names in their own language, so anyone can find theirs.
-const NAMES = { en: 'English', es: 'Español', gl: 'Galego' };
+import { LANGUAGE_NAMES, LANGUAGES } from '../i18n';
 
 export function LanguageMenu() {
   const { t, i18n } = useTranslation();
@@ -23,7 +20,7 @@ export function LanguageMenu() {
     <Menu position="bottom-end">
       <Menu.Target>
         <ActionIcon variant="default" size="lg" aria-label={t('language.label')}>
-          <IconLanguage size={18} />
+          <Languages size={18} aria-hidden />
         </ActionIcon>
       </Menu.Target>
       <Menu.Dropdown>
@@ -33,9 +30,9 @@ export function LanguageMenu() {
             lang={language}
             onClick={() => choose(language)}
             aria-current={language === current ? 'true' : undefined}
-            rightSection={language === current ? <IconCheck size={16} /> : null}
+            rightSection={language === current ? <Check size={16} aria-hidden /> : null}
           >
-            {NAMES[language]}
+            {LANGUAGE_NAMES[language]}
           </Menu.Item>
         ))}
       </Menu.Dropdown>

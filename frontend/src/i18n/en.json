@@ -3,7 +3,10 @@
     "name": "App"
   },
   "nav": {
-    "home": "Home"
+    "home": "Home",
+    "label": "Main",
+    "profile": "Profile",
+    "users": "Users"
   },
   "colorScheme": {
     "label": "Colour scheme",
@@ -29,7 +32,6 @@
     "label": "Language"
   },
   "user": {
-    "menu": "Account menu",
     "logout": "Log out"
   },
   "login": {
@@ -71,9 +73,105 @@
   "waiting": {
     "title": "Waiting for access",
     "text": "Your account {{email}} is ready, but an administrator has to give you access before you can use the application.",
-    "hint": "You will be able to sign in as usual once access is granted."
+    "hint": "You will be able to sign in as usual once access is granted.",
+    "profile": "Edit your profile"
   },
   "common": {
-    "loading": "Loading"
+    "loading": "Loading",
+    "cancel": "Cancel",
+    "save": "Save changes",
+    "close": "Close"
+  },
+  "roles": {
+    "none": "Waiting for access",
+    "user": "User",
+    "admin": "Administrator"
+  },
+  "profile": {
+    "title": "Profile",
+    "name": "Name",
+    "saveName": "Save name",
+    "saved": "Profile saved.",
+    "preferences": "Preferences",
+    "session": "Session",
+    "password": {
+      "title": "Password",
+      "helpChange": "Change the password you sign in with.",
+      "helpSet": "You sign in with a code sent by email. Set a password to sign in with it instead.",
+      "current": "Current password",
+      "new": "New password",
+      "confirm": "Repeat the new password",
+      "rules": "At least 10 characters, not only digits, not your email.",
+      "mismatch": "The passwords do not match.",
+      "change": "Change password",
+      "set": "Set password",
+      "saved": "Password saved. Your other sessions have been closed.",
+      "errors": {
+        "invalid_credentials": "The current password is not correct.",
+        "weak_password": "This password is too weak. Check the rules under the field.",
+        "rate_limited": "Too many attempts. Please wait a moment and try again.",
+        "generic": "The password could not be saved. Please try again."
+      }
+    }
+  },
+  "users": {
+    "title": "Users",
+    "search": "Search",
+    "all": "All",
+    "role": "Role",
+    "status": "Status",
+    "name": "Name",
+    "actions": "Actions",
+    "activeState": "Active",
+    "inactiveState": "Disabled",
+    "active": "Active (can sign in)",
+    "empty": "No users match these filters.",
+    "grant": "Grant access",
+    "granted": "{{email}} now has access.",
+    "method": {
+      "label": "Sign-in method",
+      "otp": "Code by email",
+      "password": "Password"
+    },
+    "create": {
+      "open": "New user",
+      "title": "New user",
+      "submit": "Create user",
+      "done": "User created."
+    },
+    "edit": {
+      "title": "Edit user",
+      "label": "Edit {{email}}",
+      "saved": "Changes saved."
+    },
+    "password": {
+      "title": "Set password",
+      "label": "Set the password of {{email}}",
+      "help": "{{email}} will sign in with this password. Their open sessions will be closed.",
+      "submit": "Set password",
+      "saved": "Password set."
+    },
+    "delete": {
+      "title": "Delete user",
+      "label": "Delete {{email}}",
+      "confirm": "Delete {{email}}? This cannot be undone.",
+      "submit": "Delete",
+      "done": "{{email}} has been deleted."
+    },
+    "pagination": {
+      "previous": "Previous page",
+      "next": "Next page"
+    },
+    "errors": {
+      "email_taken": "There is already a user with this email.",
+      "last_admin": "At least one active administrator must remain.",
+      "cannot_delete_self": "You cannot delete your own account.",
+      "password_required": "Set a password for this sign-in method.",
+      "weak_password": "This password is too weak: at least 10 characters, not only digits, not the email.",
+      "user_not_found": "This user no longer exists.",
+      "validation_error": "Check the fields and try again.",
+      "forbidden": "You no longer have permission for this.",
+      "generic": "Something went wrong. Please try again."
+    }
   }
 }

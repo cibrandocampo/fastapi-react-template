@@ -73,6 +73,13 @@ export function AuthProvider({ children }) {
       return updated;
     };
 
+    // The server ends every other session and answers with a new one for this browser.
+    const changePassword = async (body) => {
+      const session = await api('/auth/change-password', { method: 'POST', body });
+      signIn(session);
+      return session;
+    };
+
     const logout = async () => {
       try {
         await api('/auth/logout', { method: 'POST' });
@@ -90,6 +97,7 @@ export function AuthProvider({ children }) {
       loginStart,
       loginVerify,
       updateProfile,
+      changePassword,
       logout,
     };
   }, [user, status, signIn, signOut, navigate]);

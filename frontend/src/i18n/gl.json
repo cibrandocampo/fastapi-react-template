@@ -3,7 +3,10 @@
     "name": "App"
   },
   "nav": {
-    "home": "Inicio"
+    "home": "Inicio",
+    "label": "Principal",
+    "profile": "Perfil",
+    "users": "Usuarios"
   },
   "colorScheme": {
     "label": "Tema",
@@ -29,7 +32,6 @@
     "label": "Idioma"
   },
   "user": {
-    "menu": "Menú da conta",
     "logout": "Pechar sesión"
   },
   "login": {
@@ -71,9 +73,105 @@
   "waiting": {
     "title": "Agardando acceso",
     "text": "A túa conta {{email}} está lista, pero unha persoa administradora ten que darche acceso antes de que poidas usar a aplicación.",
-    "hint": "Poderás entrar coma sempre en canto che dean acceso."
+    "hint": "Poderás entrar coma sempre en canto che dean acceso.",
+    "profile": "Editar o teu perfil"
   },
   "common": {
-    "loading": "Cargando"
+    "loading": "Cargando",
+    "cancel": "Cancelar",
+    "save": "Gardar cambios",
+    "close": "Pechar"
+  },
+  "roles": {
+    "none": "Agardando acceso",
+    "user": "Usuario",
+    "admin": "Administración"
+  },
+  "profile": {
+    "title": "Perfil",
+    "name": "Nome",
+    "saveName": "Gardar nome",
+    "saved": "Perfil gardado.",
+    "preferences": "Preferencias",
+    "session": "Sesión",
+    "password": {
+      "title": "Contrasinal",
+      "helpChange": "Cambia o contrasinal co que entras.",
+      "helpSet": "Entras cun código que che enviamos por correo. Crea un contrasinal para entrar con el.",
+      "current": "Contrasinal actual",
+      "new": "Novo contrasinal",
+      "confirm": "Repite o novo contrasinal",
+      "rules": "Polo menos 10 caracteres, non só cifras e distinto do teu correo.",
+      "mismatch": "Os contrasinais non coinciden.",
+      "change": "Cambiar contrasinal",
+      "set": "Crear contrasinal",
+      "saved": "Contrasinal gardado. Pecháronse as túas outras sesións.",
+      "errors": {
+        "invalid_credentials": "O contrasinal actual non é correcto.",
+        "weak_password": "Este contrasinal é demasiado débil. Revisa as regras baixo o campo.",
+        "rate_limited": "Demasiados intentos. Agarda un momento e volve tentalo.",
+        "generic": "Non se puido gardar o contrasinal. Téntao de novo."
+      }
+    }
+  },
+  "users": {
+    "title": "Usuarios",
+    "search": "Buscar",
+    "all": "Todos",
+    "role": "Rol",
+    "status": "Estado",
+    "name": "Nome",
+    "actions": "Accións",
+    "activeState": "Activo",
+    "inactiveState": "Desactivado",
+    "active": "Activo (pode entrar)",
+    "empty": "Ningún usuario coincide con estes filtros.",
+    "grant": "Dar acceso",
+    "granted": "{{email}} xa ten acceso.",
+    "method": {
+      "label": "Forma de entrar",
+      "otp": "Código por correo",
+      "password": "Contrasinal"
+    },
+    "create": {
+      "open": "Novo usuario",
+      "title": "Novo usuario",
+      "submit": "Crear usuario",
+      "done": "Usuario creado."
+    },
+    "edit": {
+      "title": "Editar usuario",
+      "label": "Editar {{email}}",
+      "saved": "Cambios gardados."
+    },
+    "password": {
+      "title": "Poñer contrasinal",
+      "label": "Poñer o contrasinal de {{email}}",
+      "help": "{{email}} entrará con este contrasinal. Pecharanse as súas sesións abertas.",
+      "submit": "Poñer contrasinal",
+      "saved": "Contrasinal posto."
+    },
+    "delete": {
+      "title": "Borrar usuario",
+      "label": "Borrar {{email}}",
+      "confirm": "Borrar {{email}}? Non se pode desfacer.",
+      "submit": "Borrar",
+      "done": "{{email}} borrouse."
+    },
+    "pagination": {
+      "previous": "Páxina anterior",
+      "next": "Páxina seguinte"
+    },
+    "errors": {
+      "email_taken": "Xa hai un usuario con este correo.",
+      "last_admin": "Ten que quedar polo menos unha persoa administradora activa.",
+      "cannot_delete_self": "Non podes borrar a túa propia conta.",
+      "password_required": "Pon un contrasinal para esta forma de entrar.",
+      "weak_password": "Contrasinal demasiado débil: polo menos 10 caracteres, non só cifras e distinto do correo.",
+      "user_not_found": "Este usuario xa non existe.",
+      "validation_error": "Revisa os campos e téntao de novo.",
+      "forbidden": "Xa non tes permiso para isto.",
+      "generic": "Algo fallou. Téntao de novo."
+    }
   }
 }

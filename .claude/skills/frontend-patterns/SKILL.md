@@ -177,3 +177,21 @@ Minimal and professional, from nudge's palette; made with the `frontend-design` 
 - New screens: follow this table and layout; critique with screenshots of the dev stack in both schemes and
   at mobile width before calling the work done.
 
+## Navigation and app shell (T009)
+- Icons: `lucide-react` only (same set as nudge); decorative icons get `aria-hidden`, icon-only controls an
+  `aria-label`.
+- `BottomNav` is the app's only navigation: fixed to the bottom on every screen size, `--nav-h` (64 px) plus
+  `env(safe-area-inset-bottom)`. The current tab is a slate pill with icon and label; the others show the icon
+  only, with the label kept in the DOM as the accessible name. Tabs are declared in `TABS` with the minimum
+  role (`none`/`user`/`admin`); the bar is not rendered with fewer than two tabs or while the on-screen
+  keyboard is open (`useKeyboardOpen`, ignoring pinch zoom).
+- Space under the bar: the shell's content reserves `--nav-h` + safe area + 2 rem at the bottom, and
+  `:root:has([data-bottom-nav])` sets `scroll-padding-bottom` so focused fields are never hidden under it.
+  Do not override the content's bottom padding (`py` on the container would).
+- The top bar holds the brand, language and colour-scheme menus. Account actions (profile, password, log out)
+  live on `/profile`.
+- Dialogs: name the close button (`closeButtonProps={{ 'aria-label': t('common.close') }}`); a dialog mounted
+  on open must give focus back to its trigger on close (or a stable fallback); a failed action moves focus to
+  its error alert.
+- Badges are sentence case (`tt: 'none'` in the theme); `SegmentedControl` uses a filled indicator.
+

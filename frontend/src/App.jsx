@@ -5,7 +5,9 @@ import { AnonymousOnly, RequireRole, RequireSession } from './auth/routes';
 import { AppLayout } from './components/AppLayout';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
+import { UsersPage } from './pages/admin/UsersPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { ProfilePage } from './pages/ProfilePage';
 import { WaitingPage } from './pages/WaitingPage';
 import { WelcomePage } from './pages/WelcomePage';
 import { Providers } from './Providers';
@@ -21,6 +23,10 @@ export function AppRoutes() {
           <Route path="/welcome" element={<WelcomePage />} />
           <Route element={<AppLayout />}>
             <Route path="/waiting" element={<WaitingPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route element={<RequireRole min="admin" />}>
+              <Route path="/admin/users" element={<UsersPage />} />
+            </Route>
             <Route element={<RequireRole min="user" />}>
               <Route index element={<HomePage />} />
               <Route path="*" element={<NotFoundPage />} />

@@ -55,6 +55,11 @@ docker compose -f dev/docker-compose.yml logs -f <service>
 docker compose -f dev/docker-compose.yml restart <service>
 ```
 
+### After changing dependencies
+Install inside the container (`docker compose ... exec -T frontend npm install <pkg>`), then restart the
+service (`docker compose ... restart frontend`): a running Vite keeps its old pre-bundled deps and answers
+504 "Outdated Optimize Dep" (blank page) until restarted.
+
 ## Run Tests
 
 ```bash

@@ -105,6 +105,10 @@ export const theme = createTheme({
   components: {
     // Standalone links must not look like body text (the brand link opts out with underline="never").
     Anchor: { defaultProps: { underline: 'always' } },
+    // Sentence case everywhere (visual system): no upper-case badges.
+    Badge: { defaultProps: { tt: 'none' } },
+    // Mantine's default indicator is a light surface on a light track (1.1:1); a filled one meets 3:1.
+    SegmentedControl: { defaultProps: { color: 'slate' } },
   },
 });
 

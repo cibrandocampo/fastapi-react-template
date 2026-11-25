@@ -7,6 +7,8 @@ import es from './es.json';
 import gl from './gl.json';
 
 export const LANGUAGES = ['en', 'es', 'gl'];
+// Each language named in itself, so anyone can find theirs.
+export const LANGUAGE_NAMES = { en: 'English', es: 'Español', gl: 'Galego' };
 
 i18n
   .use(LanguageDetector)

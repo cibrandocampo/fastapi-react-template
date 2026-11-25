@@ -6,7 +6,7 @@ import classes from './AppLayout.module.css';
 import { BrandMark } from './BrandMark';
 import { ColorSchemeMenu } from './ColorSchemeMenu';
 import { LanguageMenu } from './LanguageMenu';
-import { UserMenu } from './UserMenu';
+import { BottomNav } from './BottomNav';
 
 export function AppLayout() {
   const { t } = useTranslation();
@@ -22,16 +22,16 @@ export function AppLayout() {
             <Group gap="xs" wrap="nowrap">
               <LanguageMenu />
               <ColorSchemeMenu />
-              <UserMenu />
             </Group>
           </Group>
         </Container>
       </AppShell.Header>
       <AppShell.Main>
-        <Container size={1080} py="xl">
+        <Container size={1080} pt="xl" className={classes.content}>
           <Outlet />
         </Container>
       </AppShell.Main>
+      <BottomNav />
     </AppShell>
   );
 }
