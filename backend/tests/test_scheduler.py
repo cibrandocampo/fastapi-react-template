@@ -2,12 +2,17 @@ import asyncio
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock
 
+import pytest
 from sqlalchemy import func, select
+from sqlalchemy.exc import DBAPIError
 
 from app.auth import otp, sessions
 from app.auth.models import FailedLogin, LoginCode, RefreshToken
 from app.core import scheduler
+from app.core.db import get_sessionmaker
+from app.core.security import create_access_token
 from app.users.models import AuthMethod, Role, User
+from tests.helpers import auth
 
 LONG_AGO = datetime.now(UTC) - timedelta(days=30)
 
@@ -123,3 +128,119 @@ async def test_a_failing_cleanup_does_not_stop_the_loop(monkeypatch, caplog):
 
     assert calls.await_count >= 2
     assert "Periodic clean-up failed" in caplog.text
+
+
+async def test_cleanup_and_an_admin_delete_of_a_stale_sign_up_never_deadlock(client, db, make_user):
+    admin = await make_user("boss@example.com", role=Role.admin)
+    headers = auth(create_access_token(admin.id, "admin"))
+    for round_ in range(10):
+        stale = await make_user(
+            f"stale{round_}@example.com",
+            role=Role.none,
+            auth_method=AuthMethod.otp,
+            password=None,
+            created_at=LONG_AGO,
+        )
+        for _ in range(5):
+            db.add(LoginCode(user_id=stale.id, code_hash="x" * 64, expires_at=LONG_AGO))
+        await db.commit()
+
+        async def run_cleanup():
+            async with get_sessionmaker()() as own:
+                await scheduler.cleanup(own)
+
+        response, cleaned = await asyncio.gather(
+            client.delete(f"/api/users/{stale.id}", headers=headers),
+            run_cleanup(),
+            return_exceptions=True,
+        )
+
+        assert cleaned is None, repr(cleaned)
+        assert response.status_code in (204, 404), response.text
+
+
+@pytest.mark.parametrize("role", [Role.user, Role.admin])
+async def test_cleanup_keeps_a_stale_sign_up_an_admin_gave_a_role(db, make_user, role):
+    await make_user(
+        "promoted@example.com",
+        role=role,
+        auth_method=AuthMethod.otp,
+        password=None,
+        created_at=LONG_AGO,
+    )
+
+    await scheduler.cleanup(db)
+
+    db.expire_all()
+    assert await db.scalar(select(User.email)) == "promoted@example.com"
+
+
+async def test_cleanup_skips_rows_another_transaction_holds(db, make_user):
+    stale = await make_user(
+        "stale@example.com",
+        role=Role.none,
+        auth_method=AuthMethod.otp,
+        password=None,
+        created_at=LONG_AGO,
+    )
+    other = await make_user("other@example.com")
+    db.add(LoginCode(user_id=other.id, code_hash="x" * 64, expires_at=LONG_AGO))
+    await db.commit()
+    stale_id = stale.id
+
+    async with get_sessionmaker()() as holder:
+        await holder.execute(select(User).where(User.id == stale_id).with_for_update())
+        await holder.execute(select(LoginCode).with_for_update())
+        async with get_sessionmaker()() as own:
+            await asyncio.wait_for(scheduler.cleanup(own), timeout=2)  # does not wait
+        await holder.rollback()
+
+    db.expire_all()
+    assert await db.get(User, stale_id) is not None
+    assert await _count(db, LoginCode) == 1
+
+
+async def test_cleanup_gives_up_on_a_statement_that_would_wait(db, make_user, caplog):
+    """A stale sign-up whose token another transaction holds: the users statement would wait on
+    the cascade. It times out quickly, is skipped, and the rest of the clean-up still runs."""
+    stale = await make_user(
+        "stale@example.com",
+        role=Role.none,
+        auth_method=AuthMethod.otp,
+        password=None,
+        created_at=LONG_AGO,
+    )
+    await sessions.issue(db, stale)
+    other = await make_user("other@example.com")
+    db.add(LoginCode(user_id=other.id, code_hash="x" * 64, expires_at=LONG_AGO))
+    await db.commit()
+    stale_id = stale.id
+
+    async with get_sessionmaker()() as holder:
+        await holder.execute(
+            select(RefreshToken).where(RefreshToken.user_id == stale_id).with_for_update()
+        )
+        async with get_sessionmaker()() as own:
+            with caplog.at_level("INFO", logger="app.core.scheduler"):
+                await asyncio.wait_for(scheduler.cleanup(own), timeout=2)
+        await holder.rollback()
+
+    db.expire_all()
+    assert await db.get(User, stale_id) is not None  # retried next run
+    assert await _count(db, LoginCode) == 0  # the later statements ran
+    assert "skipped busy rows" in caplog.text
+
+
+async def test_cleanup_raises_other_database_errors(db, monkeypatch):
+    class Boom(Exception):
+        sqlstate = "XX000"
+
+    async def failing(statement, *args, **kwargs):
+        if "lock_timeout" in str(statement):
+            return None
+        raise DBAPIError("DELETE", {}, Boom())
+
+    monkeypatch.setattr(db, "execute", failing)
+
+    with pytest.raises(DBAPIError):
+        await scheduler.cleanup(db)

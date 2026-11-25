@@ -2,8 +2,9 @@
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr
 
+from app.core.types import Code, Secret
 from app.users.schemas import UserOut
 
 
@@ -24,8 +25,8 @@ class LoginVerify(BaseModel):
 
     email: EmailStr
     # Exactly one of code and password (checked by the endpoint).
-    code: str | None = Field(default=None, max_length=12)
-    password: str | None = Field(default=None, max_length=1024)
+    code: Code | None = None
+    password: Secret | None = None
 
 
 class SessionOut(BaseModel):
@@ -40,5 +41,5 @@ class LoginResult(SessionOut):
 class ChangePassword(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    current_password: str | None = Field(default=None, max_length=1024)
-    new_password: str = Field(max_length=1024)
+    current_password: Secret | None = None
+    new_password: Secret

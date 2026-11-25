@@ -12,6 +12,7 @@ from app.core.config import get_settings
 from app.core.db import get_engine, get_sessionmaker
 from app.core.errors import register_error_handlers
 from app.users.bootstrap import ensure_admin
+from app.users.router import router as users_router
 
 
 @asynccontextmanager
@@ -36,6 +37,7 @@ def create_app() -> FastAPI:
     register_error_handlers(app)
     app.include_router(health.router, prefix="/api")
     app.include_router(auth_router, prefix="/api")
+    app.include_router(users_router, prefix="/api")
     return app
 
 

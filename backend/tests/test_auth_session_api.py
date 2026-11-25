@@ -116,7 +116,13 @@ async def test_profile_update_changes_name_language_and_theme(client, make_user)
 
 @pytest.mark.parametrize(
     "payload",
-    [{"first_name": "   "}, {"language": "fr"}, {"role": "admin"}, {"email": "x@example.com"}],
+    [
+        {"first_name": "   "},
+        {"first_name": "A\x00"},
+        {"language": "fr"},
+        {"role": "admin"},
+        {"email": "x@example.com"},
+    ],
 )
 async def test_profile_update_rejects_blank_names_unknown_values_and_other_fields(
     client, make_user, payload

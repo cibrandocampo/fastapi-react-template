@@ -246,7 +246,10 @@ async def test_disabled_account_cannot_verify(client, make_user):
     assert response.json()["error"]["code"] == "account_disabled"
 
 
-@pytest.mark.parametrize("secret", [{"code": "1" * 13}, {"password": "x" * 1025}])
+@pytest.mark.parametrize(
+    "secret",
+    [{"code": "1" * 13}, {"password": "x" * 1025}, {"password": "x\x00"}, {"code": "\x00"}],
+)
 async def test_overlong_code_or_password_is_a_validation_error(client, make_user, secret):
     await make_user("ana@example.com")
 

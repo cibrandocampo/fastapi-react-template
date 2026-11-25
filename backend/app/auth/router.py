@@ -6,6 +6,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Cookie, Depends, Request, Response
 from sqlalchemy import delete, func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import otp, sessions
@@ -86,30 +87,47 @@ async def config() -> AuthConfig:
 async def login_start(body: LoginStart, request: Request, db: Db) -> LoginStartResult:
     ratelimit.LOGIN_START_IP.hit(ratelimit.client_ip(request))
     settings = get_settings()
-    user = await _user_by_email(db, body.email)
-    if user is None:
+    found = await _user_by_email(db, body.email)
+    if found is None:
         if not settings.allow_self_signup:
             raise AppError(404, "user_not_found", "No account with this email")
         if is_disposable(body.email):
             raise AppError(400, "disposable_email", "Disposable email addresses are not accepted")
-        user = User(
-            email=body.email,
-            auth_method=AuthMethod.otp,
-            role=Role.none,
-            is_active=True,
-            language=preferred_language(request.headers.get("accept-language")),
-        )
-        db.add(user)
-        await db.commit()
-        await _send_code(db, user, "welcome_signup")
-        return LoginStartResult(method="otp")
+        found = await _sign_up(db, body.email, request)
+        if found is None:  # created by a parallel request (double click): continue as existing
+            found = await _user_by_email(db, body.email)
+    # Locked while the code is stored: an account deleted meanwhile answers 404, not a failure.
+    user = await sessions.lock_user(db, found.id) if found else None
+    if user is None:
+        await db.rollback()
+        raise AppError(404, "user_not_found", "No account with this email")
     if not user.is_active:
+        await db.rollback()
         raise AppError(403, "account_disabled", "This account is disabled")
     if user.auth_method is AuthMethod.password:
+        await db.rollback()
         return LoginStartResult(method="password")
     template = "login_code" if user.email_verified_at else "welcome_signup"
     await _send_code(db, user, template)
     return LoginStartResult(method="otp")
+
+
+async def _sign_up(db: AsyncSession, email: str, request: Request) -> User | None:
+    """Create a sign-up account; None when the address was taken by a concurrent request."""
+    user = User(
+        email=email,
+        auth_method=AuthMethod.otp,
+        role=Role.none,
+        is_active=True,
+        language=preferred_language(request.headers.get("accept-language")),
+    )
+    db.add(user)
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        return None
+    return user
 
 
 @router.post("/login/verify")
@@ -120,10 +138,15 @@ async def login_verify(
     ratelimit.LOGIN_VERIFY_IP.hit(ip)
     if (body.code is None) == (body.password is None):
         raise AppError(400, "invalid_request", "Send either a code or a password")
-    user = await _user_by_email(db, body.email)
+    found = await _user_by_email(db, body.email)
+    # Locked until the session is stored: the lockout counts attempts one at a time, and an admin
+    # deleting or disabling the account meanwhile is seen here instead of failing later.
+    user = await sessions.lock_user(db, found.id) if found else None
     if user is None:
+        await db.rollback()
         raise INVALID_CREDENTIALS
     if not user.is_active:
+        await db.rollback()
         raise AppError(403, "account_disabled", "This account is disabled")
     if body.code is not None:
         if user.auth_method is not AuthMethod.otp:
@@ -136,26 +159,15 @@ async def login_verify(
         await _check_password(db, user, body.password or "", ip)
     user.last_login_at = _now()
     user.email_verified_at = user.email_verified_at or user.last_login_at
-    await db.commit()
-    session = await sessions.issue(db, user)
+    session = await sessions.issue(db, user)  # commits the login, the consumed code and the session
     is_new = not user.first_name and not user.last_name
     return LoginResult(**_session_body(response, session, is_new=is_new))
 
 
 async def _check_password(db: AsyncSession, user: User, password: str, ip: str) -> None:
-    """Check a password under the lockout. The user's row is locked for the whole check, so
-    concurrent attempts on one account are handled one at a time and cannot exceed the limit.
-    FOR NO KEY UPDATE does not block foreign-key checks (the user's own token refreshes)."""
+    """Check a password under the lockout. The caller holds the user's row lock, so concurrent
+    attempts on one account are handled one at a time and cannot exceed the limit."""
     settings = get_settings()
-    await db.execute(
-        select(User)
-        .where(User.id == user.id)
-        .with_for_update(key_share=True)
-        .execution_options(populate_existing=True)  # re-read: it may have changed while waiting
-    )
-    if not user.is_active:
-        await db.rollback()
-        raise AppError(403, "account_disabled", "This account is disabled")
     since = _now() - timedelta(minutes=settings.lockout_minutes)
     failures = await db.scalar(
         select(func.count())
@@ -205,13 +217,23 @@ async def me(user: CurrentUser) -> UserOut:
 
 @router.patch("/me")
 async def update_me(body: ProfileUpdate, user: CurrentUser, db: Db) -> UserOut:
-    for field, value in body.model_dump(exclude_unset=True).items():
-        if value is None:
-            raise AppError(400, "invalid_request", f"{field} cannot be empty")
+    changes = body.model_dump(exclude_unset=True)
+    if any(value is None for value in changes.values()):
+        raise AppError(400, "invalid_request", "Fields cannot be null")
+    user = await _lock_self(db, user)
+    for field, value in changes.items():
         setattr(user, field, value)
     await db.commit()
-    await db.refresh(user)
     return UserOut.model_validate(user)
+
+
+async def _lock_self(db: AsyncSession, user: User) -> User:
+    """Lock the logged-in user's row for this request; 401 if an admin deleted it meanwhile."""
+    locked = await sessions.lock_user(db, user.id)
+    if locked is None or not locked.is_active:
+        await db.rollback()
+        raise AppError(401, "unauthorized", sessions.GONE)
+    return locked
 
 
 @router.post("/change-password")
@@ -219,6 +241,7 @@ async def change_password(
     body: ChangePassword, user: CurrentUser, response: Response, db: Db
 ) -> SessionOut:
     ratelimit.CHANGE_PASSWORD_USER.hit(str(user.id))
+    user = await _lock_self(db, user)
     if user.password_hash is not None and not await verify_password_async(
         body.current_password or "", user.password_hash
     ):
@@ -226,8 +249,7 @@ async def change_password(
     validate_password(body.new_password, user.email)
     user.password_hash = await hash_password_async(body.new_password)
     user.auth_method = AuthMethod.password
-    await db.commit()
-    # Every other session ends; this one continues with a new token.
-    await sessions.revoke_all(db, user.id)
+    # Every other session ends; this one continues with a new token. One transaction.
+    await sessions.revoke_all(db, user.id, commit=False)
     session = await sessions.issue(db, user)
     return SessionOut(**_session_body(response, session))

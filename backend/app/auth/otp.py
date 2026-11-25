@@ -31,7 +31,9 @@ async def issue_code(db: AsyncSession, user: User) -> str:
 
 
 async def verify_code(db: AsyncSession, user: User, code: str) -> bool:
-    """Check `code` against the user's newest live code; wrong guesses count as attempts."""
+    """Check `code` against the user's newest live code; wrong guesses count as attempts
+    (committed). A right code is marked consumed but not committed: the caller commits it with
+    the session it creates, in the same transaction."""
     settings = get_settings()
     current = await db.scalar(
         select(LoginCode)
@@ -52,5 +54,4 @@ async def verify_code(db: AsyncSession, user: User, code: str) -> bool:
         await db.commit()
         return False
     current.consumed_at = _now()
-    await db.commit()
     return True

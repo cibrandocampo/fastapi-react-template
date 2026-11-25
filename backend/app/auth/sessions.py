@@ -7,6 +7,7 @@ from datetime import UTC, datetime, timedelta
 
 from fastapi import Response
 from sqlalchemy import select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.models import RefreshToken
@@ -48,10 +49,33 @@ async def _store(db: AsyncSession, user: User, family_id: uuid.UUID) -> tuple[Re
     return token, raw
 
 
+GONE = "Session expired, please log in again"
+
+
+async def lock_user(db: AsyncSession, user_id: int, *, share: bool = False) -> User | None:
+    """Lock a user's row for the rest of the transaction and read it fresh; None if deleted.
+
+    Requests acting on a user lock this row before any of the user's tokens, the same order as an
+    admin deleting the user (row, then its tokens by cascade), so the two cannot deadlock and the
+    request sees the deletion instead of failing on it.
+
+    `share` (FOR SHARE) is for token refreshes: they run together, but wait for any request that
+    changes the user (password, role, deactivation, deletion) and then see its revocations, so no
+    session can slip past a revocation. Otherwise FOR NO KEY UPDATE (the row is going to change).
+    """
+    query = select(User).where(User.id == user_id).execution_options(populate_existing=True)
+    query = query.with_for_update(read=True) if share else query.with_for_update(key_share=True)
+    return await db.scalar(query)
+
+
 async def issue(db: AsyncSession, user: User) -> Session:
-    """Start a new session (new token family) for a user who just logged in."""
-    _, raw = await _store(db, user, uuid.uuid4())
-    await db.commit()
+    """Start a new session (new token family) for a user who just logged in. Commits."""
+    try:
+        _, raw = await _store(db, user, uuid.uuid4())
+        await db.commit()
+    except IntegrityError as exc:  # the user was deleted meanwhile
+        await db.rollback()
+        raise AppError(401, "unauthorized", GONE) from exc
     return Session(user, create_access_token(user.id, user.role.value), raw)
 
 
@@ -61,10 +85,17 @@ async def rotate(db: AsyncSession, raw: str | None) -> Session:
     The token is claimed with one atomic UPDATE, so concurrent requests with the same token
     cannot both succeed.
     """
-    invalid = AppError(401, "unauthorized", "Session expired, please log in again")
+    invalid = AppError(401, "unauthorized", GONE)
     if not raw:
         raise invalid
     token_hash = hash_token(raw)
+    # Lock order: the user's row first, then the token (see lock_user).
+    owner = await db.scalar(
+        select(RefreshToken.user_id).where(RefreshToken.token_hash == token_hash)
+    )
+    if owner is None or await lock_user(db, owner, share=True) is None:
+        await db.rollback()
+        raise invalid
     claimed = await db.scalar(
         update(RefreshToken)
         .where(RefreshToken.token_hash == token_hash, RefreshToken.revoked_at.is_(None))
@@ -90,7 +121,7 @@ async def _on_reuse(db: AsyncSession, token_hash: str) -> bool:
     """A revoked or unknown token was presented. Return True when it was rotated moments ago
     (parallel requests: the session continues); otherwise revoke its family and return False."""
     token = await db.scalar(select(RefreshToken).where(RefreshToken.token_hash == token_hash))
-    if token is None:
+    if token is None:  # pragma: no cover - removed by the clean-up between rotate's two reads
         return False
     grace = timedelta(seconds=get_settings().refresh_reuse_grace_seconds)
     if token.replaced_by_id is not None and token.revoked_at > _now() - grace:
@@ -113,14 +144,15 @@ async def revoke(db: AsyncSession, raw: str | None) -> None:
     await db.commit()
 
 
-async def revoke_all(db: AsyncSession, user_id: int) -> None:
+async def revoke_all(db: AsyncSession, user_id: int, *, commit: bool = True) -> None:
     """Log a user out everywhere (password change, deactivation, role change)."""
     await db.execute(
         update(RefreshToken)
         .where(RefreshToken.user_id == user_id, RefreshToken.revoked_at.is_(None))
         .values(revoked_at=_now())
     )
-    await db.commit()
+    if commit:
+        await db.commit()
 
 
 async def _revoke_family(db: AsyncSession, family_id: uuid.UUID) -> None:

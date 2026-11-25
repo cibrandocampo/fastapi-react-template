@@ -20,9 +20,9 @@ class RefreshToken(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    replaced_by_id: Mapped[int | None] = mapped_column(
-        ForeignKey("refresh_tokens.id", ondelete="SET NULL")
-    )
+    # The token that replaced this one. Informative only, deliberately without a foreign key: its
+    # ON DELETE action would make deleting a token update (and wait on) its predecessor.
+    replaced_by_id: Mapped[int | None] = mapped_column()
 
 
 class LoginCode(Base):

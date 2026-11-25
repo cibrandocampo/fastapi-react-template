@@ -1,13 +1,11 @@
 """User representations shared by the auth and users APIs."""
 
 from datetime import datetime
-from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, StringConstraints
+from pydantic import BaseModel, ConfigDict, EmailStr
 
+from app.core.types import Name, OptionalName, Secret
 from app.users.models import AuthMethod, Language, Role, Theme
-
-Name = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
 
 
 class UserOut(BaseModel):
@@ -33,3 +31,41 @@ class ProfileUpdate(BaseModel):
     last_name: Name | None = None
     language: Language | None = None
     theme: Theme | None = None
+
+
+class UserCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    email: EmailStr
+    first_name: OptionalName = ""
+    last_name: OptionalName = ""
+    role: Role = Role.user
+    auth_method: AuthMethod = AuthMethod.otp
+    password: Secret | None = None
+    language: Language = Language.en
+
+
+class UserUpdate(BaseModel):
+    """Admin changes; every field is optional and null is not accepted."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    first_name: OptionalName | None = None
+    last_name: OptionalName | None = None
+    role: Role | None = None
+    is_active: bool | None = None
+    auth_method: AuthMethod | None = None
+    language: Language | None = None
+
+
+class SetPassword(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    password: Secret
+
+
+class UserPage(BaseModel):
+    items: list[UserOut]
+    total: int
+    page: int
+    size: int
