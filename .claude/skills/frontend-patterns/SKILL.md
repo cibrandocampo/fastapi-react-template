@@ -129,3 +129,51 @@ Unit:            # e.g. Vitest + Testing Library, test behaviour not implementat
 E2E:             # e.g. Playwright, cover critical user flows
 Mocking:         # e.g. MSW for API mocks
 ```
+
+## Visual system (T015)
+
+Minimal and professional, from nudge's palette; made with the `frontend-design` skill. All values live in
+`frontend/src/theme.js` (Mantine theme + `cssVariablesResolver`) and `frontend/src/styles/base.css`.
+
+| Token | Light | Dark | Use |
+|-------|-------|------|-----|
+| Primary (slate) | `#454961` | `#b9bde0` | Actions, links, focus, avatar |
+| Text on filled colours | `#ffffff` | `#14161d` | `--app-color-on-filled`; in dark mode `base.css` maps Mantine's `--mantine-color-white` to it inside filled components (user decision: keep nudge's lavender fill) |
+| Danger (red) | `#9f1239` | `#f87171` | Errors (`--mantine-color-error`), destructive actions |
+| Success (teal) | `#0f766e` | `#2dd4bf` | Confirmations |
+| Brand (amber) | `#fcd34d` / text `#78350f` | same | The brand mark only — never actions or page text |
+| Page | `#fafafa` | `#14161d` | `--mantine-color-body` |
+| Surface | `#ffffff` | `#1d2029` | `--app-color-surface`, inputs |
+| Heading | `#0a0a0a` | `#f4f4f6` | h1–h3 |
+| Text / dimmed | `#2a2e42` / `#575c75` | `#e6e7ef` / `#9a9fb2` | Body, secondary |
+| Divider border | `#e4e4e7` | `#343849` | Separators, header |
+| Control border | `#8a8ea1` | `#6f7590` | Inputs (3:1 contrast, WCAG 1.4.11); focused inputs get a 2 px primary outline |
+
+- **Type**: the system font stack; h1 1.75 rem, h2 1.375 rem, h3 1.125 rem, weight 650; sentence case;
+  no all-caps labels.
+- **Links**: standalone links are underlined (`Anchor` default); the brand link opts out.
+- **Shape**: radius 6 px (controls), 8 px (surfaces), avatars round. Borders separate surfaces; shadows only on floating
+  layers (menus, notifications).
+- **Layout**: screens before the app use `AuthLayout` (same 1080 px container and 56 px top row as the shell,
+  so the brand does not move; a 360 px left-aligned column, no card). The app uses `AppLayout` (56 px top bar with a bottom border, content in a
+  1080 px container, left-aligned). Pages start with an h1.
+- **Motion**: none decorative; Mantine transitions only on things the user opened; reduced motion respected.
+- **Copy**: plain, active, sentence case; errors say what happened and what to do.
+- Contrast of every token pair is checked (all ≥ 4.5:1 text, ≥ 3:1 controls): T015 evidence `contrast.txt`.
+- Dark-mode fills: `base.css` maps Mantine's `--mantine-color-white` to the on-filled colour on elements that
+  carry a fill, matched by state (`[data-variant='filled']`, default-variant Button/ActionIcon/Badge/ThemeIcon,
+  selected options, active pagination/tabs/nav links, checkbox/radio/progress/indicator/stepper fills, checked
+  switch). A new filled component must be checked in dark mode (the T015 probe in
+  `docs/tasks/evidence/T015/qa/` renders them) and added there if it shows white on lavender — on the element
+  whose CSS reads the variable, not a child.
+- Palette colours are `slate`, `red`, `teal` (and `gray`). Mantine's other colours (yellow, blue…) are not tuned
+  for this palette and are not used. Do not use the `white` variant (primary text on white fails in dark mode).
+- `Avatar.Group` draws a page-coloured ring between overlapping avatars on purpose (a separator, not a
+  boundary): contrast checks do not apply to it.
+- Shade rule: every Mantine colour shows shade 7 in light and shade 3 in dark (`primaryShade`); new colours
+  must put their light-mode token at 7 and their dark-mode token at 3.
+- Known limit: an explicit scheme that differs from the OS one can flash on first paint (the CSP forbids the
+  inline script that would prevent it).
+- New screens: follow this table and layout; critique with screenshots of the dev stack in both schemes and
+  at mobile width before calling the work done.
+

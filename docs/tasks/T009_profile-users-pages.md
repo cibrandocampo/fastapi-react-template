@@ -5,6 +5,16 @@
 ## Objective
 Every user edits their profile and preferences; admins manage users from the UI.
 
+## Step 0 — Navigation (decided with the user, 2026-11-25)
+- Icons: `lucide-react` (same set as nudge) instead of `@tabler/icons-react`, across the app.
+- Bottom navigation always (mobile and desktop), with nudge's mechanics: fixed to the bottom, opaque surface
+  with a top border, `--nav-h` height plus `safe-area-inset-bottom`, the content padded to clear it, hidden while
+  the on-screen keyboard is open, reduced motion respected, one `<nav>` with `aria-current="page"`.
+- Visual style "Expanding label": the current tab is a slate pill with icon and label that moves between tabs;
+  the other tabs show only their icon (with an accessible name). Pill text uses the on-filled colour.
+- Tabs: Home, Profile, and Users (admins only). The top bar keeps the brand and the language and colour-scheme
+  menus; the account avatar menu is replaced by the Profile tab (log out moves to the profile page).
+
 ## Step 1 — Profile page (`/profile`)
 Name, language and theme (saved immediately, applied at once), password: change (password users) or
 set one (OTP users, switching to password login). User menu in the header links here and to logout.

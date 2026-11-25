@@ -39,11 +39,10 @@
     "email": "Correo electrónico",
     "continue": "Continuar",
     "signIn": "Entrar",
-    "codeSent": "Hemos enviado un código de 6 cifras a {{email}}. Es válido durante 10 minutos.",
     "code": "Código",
     "resend": "Enviar otro código",
     "resendIn": "Otro código en {{seconds}} s",
-    "passwordFor": "Escribe la contraseña de {{email}}.",
+    "passwordFor": "Escribe la contraseña de",
     "password": "Contraseña",
     "changeEmail": "Usar otro correo",
     "errors": {
@@ -57,7 +56,9 @@
       "generic": "Algo ha fallado. Inténtalo de nuevo.",
       "invalid_email": "Escribe un correo electrónico válido."
     },
-    "codeDigit": "Cifra {{position}} de {{total}} del código"
+    "codeDigit": "Cifra {{position}} de {{total}} del código",
+    "codeSentTo": "Te hemos enviado un código de 6 cifras a",
+    "codeValid": "Es válido durante 10 minutos."
   },
   "welcome": {
     "title": "¡Te damos la bienvenida!",

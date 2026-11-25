@@ -1,4 +1,4 @@
-import { Button, Center, Paper, Stack, Text, Title } from '@mantine/core';
+import { Button, Stack, Text, Title } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
 import { Navigate } from 'react-router';
 
@@ -12,19 +12,13 @@ export function WaitingPage() {
   if (user.role !== 'none') return <Navigate to="/" replace />;
 
   return (
-    <Center mih="70vh" p="md">
-      <Paper withBorder p="xl" radius="md" maw={480}>
-        <Stack>
-          <Title order={1} size="h2">
-            {t('waiting.title')}
-          </Title>
-          <Text>{t('waiting.text', { email: user.email })}</Text>
-          <Text c="dimmed">{t('waiting.hint')}</Text>
-          <Button variant="default" onClick={logout}>
-            {t('user.logout')}
-          </Button>
-        </Stack>
-      </Paper>
-    </Center>
+    <Stack gap="lg" maw={520}>
+      <Title order={1}>{t('waiting.title')}</Title>
+      <Text>{t('waiting.text', { email: user.email })}</Text>
+      <Text c="dimmed">{t('waiting.hint')}</Text>
+      <Button variant="default" onClick={logout} w="fit-content">
+        {t('user.logout')}
+      </Button>
+    </Stack>
   );
 }

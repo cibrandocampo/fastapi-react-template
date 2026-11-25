@@ -19,7 +19,7 @@ export function UserMenu() {
     <Menu position="bottom-end">
       <Menu.Target>
         <UnstyledButton aria-label={t('user.menu')}>
-          <Avatar radius="xl" color="indigo">
+          <Avatar radius="100%" color="slate" variant="filled">
             {initials}
           </Avatar>
         </UnstyledButton>

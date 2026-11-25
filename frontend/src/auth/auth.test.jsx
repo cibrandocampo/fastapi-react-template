@@ -1,4 +1,4 @@
-import { act, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Route, Routes } from 'react-router';
@@ -114,7 +114,8 @@ describe('session', () => {
     server.use(withSession(makeUser({ first_name: 'Ana', last_name: '' })));
     renderWithProviders(<AppRoutes />);
 
-    expect(await screen.findByText('A')).toBeInTheDocument();
+    const account = await screen.findByRole('button', { name: 'Account menu' });
+    expect(within(account).getByText('A')).toBeInTheDocument();
   });
 });
 

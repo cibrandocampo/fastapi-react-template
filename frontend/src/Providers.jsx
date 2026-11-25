@@ -6,7 +6,7 @@ import { I18nextProvider } from 'react-i18next';
 
 import { createQueryClient } from './api/queryClient';
 import i18n from './i18n';
-import { colorSchemeManager, theme } from './theme';
+import { colorSchemeManager, cssVariablesResolver, theme } from './theme';
 
 // `env="test"` turns off Mantine transitions and portals (tests only).
 export function Providers({ children, queryClient, env }) {
@@ -17,6 +17,7 @@ export function Providers({ children, queryClient, env }) {
       <MantineProvider
         theme={theme}
         colorSchemeManager={colorSchemeManager}
+        cssVariablesResolver={cssVariablesResolver}
         defaultColorScheme="auto"
         env={env}
       >

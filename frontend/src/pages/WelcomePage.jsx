@@ -1,10 +1,11 @@
-import { Alert, Button, Center, Paper, Stack, Text, TextInput, Title } from '@mantine/core';
+import { Alert, Anchor, Button, Stack, Text, TextInput, Title } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, useNavigate } from 'react-router';
 
 import { useAuth } from '../auth/useAuth';
+import { AuthLayout } from '../components/AuthLayout';
 
 // First login: the account has no name yet.
 export function WelcomePage() {
@@ -36,21 +37,10 @@ export function WelcomePage() {
   });
 
   return (
-    <Center mih="100vh" p="md">
-      <Paper
-        withBorder
-        p="xl"
-        radius="md"
-        w="100%"
-        maw={420}
-        component="form"
-        onSubmit={save}
-        noValidate
-      >
-        <Stack>
-          <Title order={1} size="h2">
-            {t('welcome.title')}
-          </Title>
+    <AuthLayout>
+      <form onSubmit={save} noValidate>
+        <Stack gap="lg">
+          <Title order={1}>{t('welcome.title')}</Title>
           <Text c="dimmed">{t('welcome.text')}</Text>
           <TextInput
             label={t('welcome.firstName')}
@@ -72,11 +62,11 @@ export function WelcomePage() {
           <Button type="submit" loading={form.submitting}>
             {t('welcome.save')}
           </Button>
-          <Button variant="subtle" onClick={logout}>
+          <Anchor component="button" type="button" onClick={logout} w="fit-content">
             {t('user.logout')}
-          </Button>
+          </Anchor>
         </Stack>
-      </Paper>
-    </Center>
+      </form>
+    </AuthLayout>
   );
 }

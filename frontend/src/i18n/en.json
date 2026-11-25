@@ -39,11 +39,10 @@
     "email": "Email",
     "continue": "Continue",
     "signIn": "Sign in",
-    "codeSent": "We have sent a 6-digit code to {{email}}. It is valid for 10 minutes.",
     "code": "Code",
     "resend": "Send a new code",
     "resendIn": "New code in {{seconds}} s",
-    "passwordFor": "Enter the password for {{email}}.",
+    "passwordFor": "Enter the password for",
     "password": "Password",
     "changeEmail": "Use another email",
     "errors": {
@@ -57,7 +56,9 @@
       "generic": "Something went wrong. Please try again.",
       "invalid_email": "Enter a valid email address."
     },
-    "codeDigit": "Code digit {{position}} of {{total}}"
+    "codeDigit": "Code digit {{position}} of {{total}}",
+    "codeSentTo": "We have sent a 6-digit code to",
+    "codeValid": "It is valid for 10 minutes."
   },
   "welcome": {
     "title": "Welcome!",

@@ -1,0 +1,4 @@
+.header {
+  background: var(--mantine-color-body);
+  border-bottom-color: var(--mantine-color-default-border);
+}

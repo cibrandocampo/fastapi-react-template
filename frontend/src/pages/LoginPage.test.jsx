@@ -69,7 +69,8 @@ describe('LoginPage', () => {
     renderWithProviders(<AppRoutes />, { route: '/login' });
 
     await enterEmail();
-    expect(await screen.findByText(/sent a 6-digit code to ana@example.com/)).toBeInTheDocument();
+    expect(await screen.findByText('We have sent a 6-digit code to')).toBeInTheDocument();
+    expect(screen.getByText('ana@example.com')).toBeInTheDocument();
     await typeCode('123456');
     await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
 
@@ -133,7 +134,8 @@ describe('LoginPage', () => {
     renderWithProviders(<AppRoutes />, { route: '/login' });
     await enterEmail();
 
-    expect(await screen.findByRole('button', { name: /New code in 30 s/ })).toBeDisabled();
+    expect(await screen.findByText('New code in 30 s')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Send a new code' })).not.toBeInTheDocument();
     for (let second = 0; second < 30; second += 1) {
       // One tick per second, as in the browser: each tick schedules the next after rendering.
       await act(() => vi.advanceTimersByTimeAsync(1000));
@@ -141,7 +143,7 @@ describe('LoginPage', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Send a new code' }));
 
     await waitFor(() => expect(start).toHaveBeenCalledTimes(2));
-    expect(await screen.findByRole('button', { name: /New code in 30 s/ })).toBeDisabled();
+    expect(await screen.findByText('New code in 30 s')).toBeInTheDocument();
   });
 
   it('goes back to the email step', async () => {
@@ -250,7 +252,8 @@ describe('LoginPage', () => {
 
     const first = await screen.findByRole('textbox', { name: 'Code digit 1 of 6' });
     await waitFor(() => expect(first).toHaveFocus());
-    await new Promise((resolve) => setTimeout(resolve, 50)); // after Mantine's layout effects
+    // Let Mantine's layout effects and transitions settle, then check the focus stayed.
+    await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
     expect(screen.getByRole('textbox', { name: 'Code digit 1 of 6' })).toHaveFocus();
   });
 

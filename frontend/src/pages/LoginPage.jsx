@@ -2,9 +2,7 @@ import {
   Alert,
   Anchor,
   Button,
-  Center,
   Group,
-  Paper,
   PasswordInput,
   PinInput,
   Stack,
@@ -18,8 +16,8 @@ import { useTranslation } from 'react-i18next';
 
 import { api } from '../api/client';
 import { useAuth } from '../auth/useAuth';
-import { ColorSchemeMenu } from '../components/ColorSchemeMenu';
-import { LanguageMenu } from '../components/LanguageMenu';
+import { AuthLayout } from '../components/AuthLayout';
+import classes from './LoginPage.module.css';
 
 export const RESEND_SECONDS = 30;
 // A light check before calling the API; the server validates for real.
@@ -117,112 +115,124 @@ export function LoginPage() {
   const heading = config.data?.allow_self_signup ? t('login.titleSignup') : t('login.title');
 
   return (
-    <Center mih="100vh" p="md">
-      <Stack w="100%" maw={420}>
-        <Group justify="flex-end">
-          <LanguageMenu />
-          <ColorSchemeMenu />
-        </Group>
-        <Paper withBorder p="xl" radius="md" component="form" onSubmit={submit} noValidate>
-          <Stack>
-            <Title order={1} size="h2">
-              {heading}
-            </Title>
+    <AuthLayout>
+      <form onSubmit={submit} noValidate>
+        <Stack gap="lg">
+          <Title order={1}>{heading}</Title>
 
-            {step === 'email' && (
-              <>
-                <Text c="dimmed">{t('login.emailHelp')}</Text>
-                <TextInput
-                  label={t('login.email')}
-                  type="email"
-                  autoComplete="username"
-                  spellCheck={false}
-                  autoCapitalize="off"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.currentTarget.value)}
-                />
-              </>
-            )}
+          {step === 'email' && (
+            <>
+              <Text c="dimmed">{t('login.emailHelp')}</Text>
+              <TextInput
+                label={t('login.email')}
+                type="email"
+                autoComplete="username"
+                spellCheck={false}
+                autoCapitalize="off"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.currentTarget.value)}
+              />
+            </>
+          )}
 
-            {step === 'otp' && (
-              <>
-                <Text>{t('login.codeSent', { email: email.trim() })}</Text>
-                <Stack gap={4}>
-                  <Text id="login-code-label" fw={500} size="sm">
-                    {t('login.code')}
-                  </Text>
-                  <PinInput
-                    // A fixed id: without it Mantine generates one after mounting and rebuilds the
-                    // inputs, which drops the focus just moved to the first digit.
-                    id="login-code"
-                    length={6}
-                    type="number"
-                    oneTimeCode
-                    value={secret}
-                    onChange={setSecret}
-                    ref={secretInput}
-                    aria-labelledby="login-code-label"
-                    getInputProps={(index) => ({
-                      'aria-label': t('login.codeDigit', { position: index + 1, total: 6 }),
-                    })}
-                  />
-                </Stack>
-                <Group justify="space-between">
-                  <Anchor component="button" type="button" onClick={back}>
-                    {t('login.changeEmail')}
-                  </Anchor>
-                  <Button variant="subtle" onClick={resend} disabled={resendIn > 0 || busy}>
-                    {resendIn > 0 ? t('login.resendIn', { seconds: resendIn }) : t('login.resend')}
-                  </Button>
-                </Group>
-              </>
-            )}
-
-            {step === 'password' && (
-              <>
-                <Text>{t('login.passwordFor', { email: email.trim() })}</Text>
-                {/* Lets password managers tie the password to the account. */}
-                <input
-                  type="text"
-                  name="username"
-                  autoComplete="username"
-                  value={email.trim()}
-                  readOnly
-                  hidden
-                />
-                <PasswordInput
-                  label={t('login.password')}
-                  autoComplete="current-password"
-                  required
+          {step === 'otp' && (
+            <>
+              <Stack gap={2}>
+                <Text>{t('login.codeSentTo')}</Text>
+                <Text fw={600} className={classes.email}>
+                  {email.trim()}
+                </Text>
+                <Text c="dimmed" size="sm">
+                  {t('login.codeValid')}
+                </Text>
+              </Stack>
+              <Stack gap={4}>
+                <Text id="login-code-label" fw={500} size="sm">
+                  {t('login.code')}
+                </Text>
+                <PinInput
+                  // A fixed id: without it Mantine generates one after mounting and rebuilds the
+                  // inputs, which drops the focus just moved to the first digit.
+                  id="login-code"
+                  length={6}
+                  type="number"
+                  oneTimeCode
                   value={secret}
-                  onChange={(e) => setSecret(e.currentTarget.value)}
+                  onChange={setSecret}
                   ref={secretInput}
+                  placeholder=""
+                  aria-labelledby="login-code-label"
+                  getInputProps={(index) => ({
+                    'aria-label': t('login.codeDigit', { position: index + 1, total: 6 }),
+                  })}
                 />
+              </Stack>
+              <Group justify="space-between">
                 <Anchor component="button" type="button" onClick={back}>
                   {t('login.changeEmail')}
                 </Anchor>
-              </>
-            )}
+                {resendIn > 0 ? (
+                  <Text c="dimmed" size="sm" aria-live="polite">
+                    {t('login.resendIn', { seconds: resendIn })}
+                  </Text>
+                ) : (
+                  <Anchor component="button" type="button" onClick={resend} disabled={busy}>
+                    {t('login.resend')}
+                  </Anchor>
+                )}
+              </Group>
+            </>
+          )}
 
-            {error && (
-              <Alert color="red" role="alert">
-                {t(`login.errors.${error}`)}
-              </Alert>
-            )}
+          {step === 'password' && (
+            <>
+              <Stack gap={2}>
+                <Text>{t('login.passwordFor')}</Text>
+                <Text fw={600} className={classes.email}>
+                  {email.trim()}
+                </Text>
+              </Stack>
+              {/* Lets password managers tie the password to the account. */}
+              <input
+                type="text"
+                name="username"
+                autoComplete="username"
+                value={email.trim()}
+                readOnly
+                hidden
+              />
+              <PasswordInput
+                label={t('login.password')}
+                autoComplete="current-password"
+                required
+                value={secret}
+                onChange={(e) => setSecret(e.currentTarget.value)}
+                ref={secretInput}
+              />
+              <Anchor component="button" type="button" onClick={back}>
+                {t('login.changeEmail')}
+              </Anchor>
+            </>
+          )}
 
-            <Button
-              type="submit"
-              loading={busy}
-              disabled={
-                step === 'email' ? !email.trim() : step === 'otp' ? secret.length !== 6 : !secret
-              }
-            >
-              {step === 'email' ? t('login.continue') : t('login.signIn')}
-            </Button>
-          </Stack>
-        </Paper>
-      </Stack>
-    </Center>
+          {error && (
+            <Alert color="red" role="alert">
+              {t(`login.errors.${error}`)}
+            </Alert>
+          )}
+
+          <Button
+            type="submit"
+            loading={busy}
+            disabled={
+              step === 'email' ? !email.trim() : step === 'otp' ? secret.length !== 6 : !secret
+            }
+          >
+            {step === 'email' ? t('login.continue') : t('login.signIn')}
+          </Button>
+        </Stack>
+      </form>
+    </AuthLayout>
   );
 }
