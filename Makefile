@@ -5,6 +5,7 @@ FRONTEND := $(DC) exec -T frontend
 PY_IMG  := python:3.14-slim
 # Production stack (docker-compose.yml) and the image `make build` produces.
 PROD    := docker compose --env-file .env -f docker-compose.yml
+E2E     := docker compose -f e2e/docker-compose.yml
 IMAGE   ?= $(shell sed -n 's/^DOCKER_IMAGE=//p' .env 2>/dev/null)
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 export HOST_UID := $(shell id -u)
@@ -13,7 +14,7 @@ export HOST_GID := $(shell id -g)
 .PHONY: help init dev-up dev-down dev-logs dev-ps lock db-migrate db-revision \
         test-backend coverage-backend lint-backend format-backend \
         test-frontend lint-frontend format-frontend build-frontend test lint \
-        build up down logs pull qa e2e hooks
+        build up down logs pull qa e2e hooks lint-e2e
 
 help: ## List targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-18s %s\n", $$1, $$2}'
@@ -73,12 +74,20 @@ build-frontend: ## Production build of the frontend (checks it compiles)
 
 test: coverage-backend test-frontend ## All unit tests
 
-lint: lint-backend lint-frontend ## All linters
+lint-e2e: ## Format check of the end-to-end specs (frontend Prettier config)
+	docker run --rm -u $(HOST_UID):$(HOST_GID) -e HOME=/tmp -e NPM_CONFIG_UPDATE_NOTIFIER=false \
+	  -v "$(CURDIR):/repo" -w /repo node:24-alpine \
+	  npx -y prettier@3.10.1 --config frontend/.prettierrc.json --check 'e2e/**/*.{js,json}' '!e2e/package-lock.json'
+
+lint: lint-backend lint-frontend lint-e2e ## All linters
 
 qa: lint test ## Everything CI checks: linters and unit tests
 
-e2e: ## End-to-end tests (T011)
-	@echo "End-to-end tests arrive in T011." && exit 1
+e2e: ## End-to-end tests: production image + Postgres + Mailpit + Playwright; report in e2e/artifacts/report
+	mkdir -p e2e/artifacts
+	$(E2E) build
+	@# Tear down even when interrupted (Ctrl-C) or failing; keep the runner's exit status.
+	trap '$(E2E) down -v --remove-orphans' EXIT INT TERM; $(E2E) run --rm playwright
 
 hooks: ## Install the git pre-commit hook (lint of staged files in the dev containers)
 	sh scripts/install-hooks.sh

@@ -28,7 +28,7 @@ dist/
 coverage/
 htmlcov/
 .pytest_cache/
-playwright-report/
+e2e/artifacts/
 test-results/
 docs/tasks/evidence/
 

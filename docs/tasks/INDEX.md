@@ -16,7 +16,7 @@ Plan: [docs/plans/template-base.md](../plans/template-base.md) · Branch: `feat/
 | T015 | Visual design system (nudge palette, frontend-design skill) | T008 | Completed | Approved |
 | T009 | Profile and users admin pages | T006, T015 | Completed | Approved |
 | T010 | Production image and deployment files | T009 | Completed | Approved |
-| T011 | End-to-end tests | T010 | Pending | — |
+| T011 | End-to-end tests | T010 | Completed | Approved |
 | T012 | Continuous integration | T011 | Pending | — |
 | T013 | Stack skills and documentation | T012 | Pending | — |
 | T014 | Backport the workflow to dotclaude (separate PR) | T013 | Pending | — |
