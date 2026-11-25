@@ -82,12 +82,13 @@ docs/                  plans, tasks, configuration
 - Dev host ports are prefixed with `1` (15432, 18000, 15173, 18025…); internal ports are standard.
 - A backend change lives in `backend/`, a frontend change in `frontend/`.
 
-## 9. Docker-first
+## 9. Docker-first — nothing runs on the host
 
 **Never run language runtimes or install project dependencies on the host**: no `python`, `node`,
 `npm`, `pip`… All project commands go through Docker (`make` targets or
 `docker compose -f dev/docker-compose.yml exec <service> <command>`). Host tools: `docker`, `git`,
-`gh`, `make`, `curl`. Exceptions are documented in the `dev-workflow` skill with a reason.
+`gh`, `make`, `curl`. This includes the CLIs third-party skills call: their commands are adapted to run
+in a throwaway container. Exceptions are documented in the `dev-workflow` skill with a reason.
 
 ## 10. Skills
 
@@ -101,9 +102,11 @@ docs/                  plans, tasks, configuration
 | `security` | Auth, sessions, permissions, input handling, secrets |
 | `ci` | Workflows and pipelines |
 | `memory-conventions` | Updating `MEMORY.md` |
-| `modern-web-guidance` | Any HTML/CSS/client-side JS work: read the matching guides before writing UI code |
+| `modern-web-guidance` | Any HTML/CSS/client-side JS work: search and read the matching guides first (its CLI runs in Docker) |
+| `frontend-design` | New screens or visual changes: follow the visual system in `frontend-patterns`, critique with screenshots |
 | `security-audit` | Security questions and reviews (guidance mode); a full audit only when the user asks for one |
 
-`modern-web-guidance` (Google Chrome) and `security-audit` (Cloudflare) are vendored third-party skills:
+`modern-web-guidance` (Google Chrome), `security-audit` (Cloudflare) and `frontend-design` (Anthropic) are
+vendored third-party skills:
 see each `UPSTREAM.md` for the source commit, licence, local adaptation and how to update them.
 Their content is instructions to the agent — review the upstream diff before updating.

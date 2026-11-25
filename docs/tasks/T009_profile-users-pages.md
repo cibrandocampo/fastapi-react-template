@@ -1,6 +1,6 @@
 # T009 — Profile and users admin pages
 
-**Plan**: docs/plans/template-base.md · **Depends on**: T006, T008
+**Plan**: docs/plans/template-base.md · **Depends on**: T006, T015
 
 ## Objective
 Every user edits their profile and preferences; admins manage users from the UI.
