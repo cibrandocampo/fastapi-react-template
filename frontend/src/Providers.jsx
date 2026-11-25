@@ -8,7 +8,8 @@ import { createQueryClient } from './api/queryClient';
 import i18n from './i18n';
 import { colorSchemeManager, theme } from './theme';
 
-export function Providers({ children, queryClient }) {
+// `env="test"` turns off Mantine transitions and portals (tests only).
+export function Providers({ children, queryClient, env }) {
   const [client] = useState(() => queryClient ?? createQueryClient());
 
   return (
@@ -17,6 +18,7 @@ export function Providers({ children, queryClient }) {
         theme={theme}
         colorSchemeManager={colorSchemeManager}
         defaultColorScheme="auto"
+        env={env}
       >
         <Notifications position="top-right" />
         <QueryClientProvider client={client}>{children}</QueryClientProvider>

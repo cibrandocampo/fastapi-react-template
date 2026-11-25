@@ -1,8 +1,20 @@
 {
-  "app": { "name": "App" },
-  "nav": { "home": "Inicio" },
-  "colorScheme": { "label": "Tema", "light": "Claro", "dark": "Escuro", "auto": "Sistema" },
-  "home": { "title": "Benvida", "text": "Comeza a construír o teu proxecto desde aquí." },
+  "app": {
+    "name": "App"
+  },
+  "nav": {
+    "home": "Inicio"
+  },
+  "colorScheme": {
+    "label": "Tema",
+    "light": "Claro",
+    "dark": "Escuro",
+    "auto": "Sistema"
+  },
+  "home": {
+    "title": "Benvida",
+    "text": "Comeza a construír o teu proxecto desde aquí."
+  },
   "notFound": {
     "title": "Páxina non atopada",
     "text": "A páxina que buscas non existe.",
@@ -12,5 +24,55 @@
     "title": "Algo fallou",
     "generic": "Erro inesperado. Téntao de novo.",
     "rate_limited": "Demasiados intentos. Agarda un momento e volve tentalo."
+  },
+  "language": {
+    "label": "Idioma"
+  },
+  "user": {
+    "menu": "Menú da conta",
+    "logout": "Pechar sesión"
+  },
+  "login": {
+    "title": "Entrar",
+    "titleSignup": "Entra ou crea unha conta",
+    "emailHelp": "Escribe o teu correo. Pedirémosche o contrasinal ou enviarémosche un código.",
+    "email": "Correo electrónico",
+    "continue": "Continuar",
+    "signIn": "Entrar",
+    "codeSent": "Enviámosche un código de 6 cifras a {{email}}. É válido durante 10 minutos.",
+    "code": "Código",
+    "resend": "Enviar outro código",
+    "resendIn": "Outro código en {{seconds}} s",
+    "passwordFor": "Escribe o contrasinal de {{email}}.",
+    "password": "Contrasinal",
+    "changeEmail": "Usar outro correo",
+    "errors": {
+      "user_not_found": "Non hai ningunha conta con este correo.",
+      "disposable_email": "Non se admiten correos desbotables. Usa o teu correo habitual.",
+      "account_disabled": "Esta conta está desactivada. Contacta cunha persoa administradora.",
+      "invalid_credentials": "O código ou o contrasinal non son correctos.",
+      "method_mismatch": "Esta conta usa outro método para entrar. Volve atrás e téntao de novo.",
+      "locked": "Demasiados intentos fallidos. Volve tentalo en 15 minutos.",
+      "rate_limited": "Demasiados intentos. Agarda un momento e volve tentalo.",
+      "generic": "Algo fallou. Téntao de novo.",
+      "invalid_email": "Escribe un correo electrónico válido."
+    },
+    "codeDigit": "Cifra {{position}} de {{total}} do código"
+  },
+  "welcome": {
+    "title": "Dámosche a benvida!",
+    "text": "Dinos o teu nome para rematar de preparar a túa conta.",
+    "firstName": "Nome",
+    "lastName": "Apelidos",
+    "save": "Continuar",
+    "required": "Obrigatorio"
+  },
+  "waiting": {
+    "title": "Agardando acceso",
+    "text": "A túa conta {{email}} está lista, pero unha persoa administradora ten que darche acceso antes de que poidas usar a aplicación.",
+    "hint": "Poderás entrar coma sempre en canto che dean acceso."
+  },
+  "common": {
+    "loading": "Cargando"
   }
 }

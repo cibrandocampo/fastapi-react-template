@@ -22,6 +22,8 @@ Logging configured for the app's own loggers (level from `LOG_LEVEL`), without p
 Unhandled exceptions are logged and answered as 500 with the error envelope
 (`internal_error`, no details leaked); tested.
 
+First paint: avoid the white flash before the colour scheme is applied in dark mode (a `color-scheme`
+meta / background in a static stylesheet, no inline script).
 Bundle size: split the frontend bundle (lazy-loaded routes, Mantine/vendor chunk) so the build has no
 chunk-size warning (T007 QA O8: 563 kB single chunk).
 

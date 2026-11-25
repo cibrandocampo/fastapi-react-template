@@ -1,18 +1,34 @@
 import { BrowserRouter, Route, Routes } from 'react-router';
 
+import { AuthProvider } from './auth/AuthContext';
+import { AnonymousOnly, RequireRole, RequireSession } from './auth/routes';
 import { AppLayout } from './components/AppLayout';
 import { HomePage } from './pages/HomePage';
+import { LoginPage } from './pages/LoginPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { WaitingPage } from './pages/WaitingPage';
+import { WelcomePage } from './pages/WelcomePage';
 import { Providers } from './Providers';
 
 export function AppRoutes() {
   return (
-    <Routes>
-      <Route element={<AppLayout />}>
-        <Route index element={<HomePage />} />
-        <Route path="*" element={<NotFoundPage />} />
-      </Route>
-    </Routes>
+    <AuthProvider>
+      <Routes>
+        <Route element={<AnonymousOnly />}>
+          <Route path="/login" element={<LoginPage />} />
+        </Route>
+        <Route element={<RequireSession />}>
+          <Route path="/welcome" element={<WelcomePage />} />
+          <Route element={<AppLayout />}>
+            <Route path="/waiting" element={<WaitingPage />} />
+            <Route element={<RequireRole min="user" />}>
+              <Route index element={<HomePage />} />
+              <Route path="*" element={<NotFoundPage />} />
+            </Route>
+          </Route>
+        </Route>
+      </Routes>
+    </AuthProvider>
   );
 }
 

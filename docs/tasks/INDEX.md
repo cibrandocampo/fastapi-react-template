@@ -12,7 +12,7 @@ Plan: [docs/plans/template-base.md](../plans/template-base.md) · Branch: `feat/
 | T005 | Login flow (OTP and password) | T003, T004 | Completed | Approved |
 | T006 | User management API | T003 | Completed | Approved |
 | T007 | Frontend skeleton | T002 | Completed | Approved |
-| T008 | Login, onboarding and waiting pages | T005, T007 | Pending | — |
+| T008 | Login, onboarding and waiting pages | T005, T007 | Completed | Approved |
 | T009 | Profile and users admin pages | T006, T008 | Pending | — |
 | T010 | Production image and deployment files | T009 | Pending | — |
 | T011 | End-to-end tests | T010 | Pending | — |

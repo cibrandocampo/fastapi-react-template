@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Link, Outlet } from 'react-router';
 
 import { ColorSchemeMenu } from './ColorSchemeMenu';
+import { LanguageMenu } from './LanguageMenu';
+import { UserMenu } from './UserMenu';
 
 export function AppLayout() {
   const { t } = useTranslation();
@@ -14,7 +16,11 @@ export function AppLayout() {
           <Anchor component={Link} to="/" underline="never" c="inherit" fw={700} fz="xl">
             {t('app.name')}
           </Anchor>
-          <ColorSchemeMenu />
+          <Group gap="xs">
+            <LanguageMenu />
+            <ColorSchemeMenu />
+            <UserMenu />
+          </Group>
         </Group>
       </AppShell.Header>
       <AppShell.Main>

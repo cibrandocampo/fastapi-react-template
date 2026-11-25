@@ -1,8 +1,20 @@
 {
-  "app": { "name": "App" },
-  "nav": { "home": "Inicio" },
-  "colorScheme": { "label": "Tema", "light": "Claro", "dark": "Oscuro", "auto": "Sistema" },
-  "home": { "title": "Bienvenida", "text": "Empieza a construir tu proyecto desde aquí." },
+  "app": {
+    "name": "App"
+  },
+  "nav": {
+    "home": "Inicio"
+  },
+  "colorScheme": {
+    "label": "Tema",
+    "light": "Claro",
+    "dark": "Oscuro",
+    "auto": "Sistema"
+  },
+  "home": {
+    "title": "Bienvenida",
+    "text": "Empieza a construir tu proyecto desde aquí."
+  },
   "notFound": {
     "title": "Página no encontrada",
     "text": "La página que buscas no existe.",
@@ -12,5 +24,55 @@
     "title": "Algo ha fallado",
     "generic": "Error inesperado. Inténtalo de nuevo.",
     "rate_limited": "Demasiados intentos. Espera un momento y vuelve a intentarlo."
+  },
+  "language": {
+    "label": "Idioma"
+  },
+  "user": {
+    "menu": "Menú de la cuenta",
+    "logout": "Cerrar sesión"
+  },
+  "login": {
+    "title": "Entrar",
+    "titleSignup": "Entra o crea una cuenta",
+    "emailHelp": "Escribe tu correo. Te pediremos tu contraseña o te enviaremos un código.",
+    "email": "Correo electrónico",
+    "continue": "Continuar",
+    "signIn": "Entrar",
+    "codeSent": "Hemos enviado un código de 6 cifras a {{email}}. Es válido durante 10 minutos.",
+    "code": "Código",
+    "resend": "Enviar otro código",
+    "resendIn": "Otro código en {{seconds}} s",
+    "passwordFor": "Escribe la contraseña de {{email}}.",
+    "password": "Contraseña",
+    "changeEmail": "Usar otro correo",
+    "errors": {
+      "user_not_found": "No hay ninguna cuenta con este correo.",
+      "disposable_email": "No se admiten correos desechables. Usa tu correo habitual.",
+      "account_disabled": "Esta cuenta está desactivada. Contacta con una persona administradora.",
+      "invalid_credentials": "El código o la contraseña no son correctos.",
+      "method_mismatch": "Esta cuenta usa otro método para entrar. Vuelve atrás e inténtalo de nuevo.",
+      "locked": "Demasiados intentos fallidos. Vuelve a intentarlo en 15 minutos.",
+      "rate_limited": "Demasiados intentos. Espera un momento y vuelve a intentarlo.",
+      "generic": "Algo ha fallado. Inténtalo de nuevo.",
+      "invalid_email": "Escribe un correo electrónico válido."
+    },
+    "codeDigit": "Cifra {{position}} de {{total}} del código"
+  },
+  "welcome": {
+    "title": "¡Te damos la bienvenida!",
+    "text": "Dinos tu nombre para terminar de preparar tu cuenta.",
+    "firstName": "Nombre",
+    "lastName": "Apellidos",
+    "save": "Continuar",
+    "required": "Obligatorio"
+  },
+  "waiting": {
+    "title": "Esperando acceso",
+    "text": "Tu cuenta {{email}} está lista, pero una persona administradora tiene que darte acceso antes de que puedas usar la aplicación.",
+    "hint": "Podrás entrar como siempre en cuanto te den acceso."
+  },
+  "common": {
+    "loading": "Cargando"
   }
 }
