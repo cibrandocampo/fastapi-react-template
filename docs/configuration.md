@@ -118,7 +118,7 @@ All state is in Postgres. A consistent dump while the stack runs:
 docker compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > backup-$(date +%F).dump
 ```
 
-Restore into a fresh stack (empty `DATA_PATH`), before the app has started for the first time:
+Restore into a fresh database (no data yet for this Postgres version), before the app starts on it:
 
 ```sh
 docker compose up -d db
@@ -131,7 +131,11 @@ scheduled dumps (Task Scheduler running the first command).
 
 ## Upgrading PostgreSQL to a new major version
 
-The image keeps each major version's files apart (`$DATA_PATH/postgres/18/docker`), and a new major
-cannot open an older one's files. Upgrading (say 18 → 19) is a dump and restore: take a dump as above,
-stop the stack, move `$DATA_PATH/postgres` aside, change the `db` image, then restore into the fresh
-stack as above. Keep the old folder until the app works on the new one.
+A new major version cannot open an older one's files. The image keeps each major in its own folder
+(`$DATA_PATH/postgres/18/docker`), so a new one starts empty next to the old data. Upgrading (say
+18 → 19) is a dump and restore:
+
+1. Take a dump as above, then `docker compose down`.
+2. Change the `db` image in `docker-compose.yml` (`postgres:19-alpine`).
+3. Restore as above: `up -d db`, `pg_restore`, then `up -d`.
+4. Once the app works, delete the old major's folder (`$DATA_PATH/postgres/18`).
