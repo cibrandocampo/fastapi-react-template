@@ -12,6 +12,7 @@
 }
 
 .list {
+  position: relative;
   display: flex;
   justify-content: space-around;
   align-items: center;
@@ -23,6 +24,8 @@
 }
 
 .tab {
+  /* Positioned so it paints above the sliding pill. */
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -52,9 +55,34 @@
 }
 
 .tab[data-current] {
+  anchor-name: --current-tab;
   padding: 0 18px;
-  background: var(--mantine-primary-color-filled);
   color: var(--app-color-on-filled);
+}
+
+/* The pill is one element tethered to the current tab. When the tab changes, BottomNav slides it
+   from the old tab to the new one in step with the labels folding and unfolding. Without anchor
+   support, the current tab paints its own pill. */
+.list::before {
+  content: '';
+  position: absolute;
+  position-anchor: --current-tab;
+  inset-block-start: anchor(top);
+  inset-block-end: anchor(bottom);
+  inset-inline-start: anchor(self-start);
+  inset-inline-end: anchor(self-end);
+  border-radius: 999px;
+  background: var(--mantine-primary-color-filled);
+}
+
+@supports not (anchor-name: --current-tab) {
+  .list::before {
+    content: none;
+  }
+
+  .tab[data-current] {
+    background: var(--mantine-primary-color-filled);
+  }
 }
 
 /* The label is always in the DOM (the tab's accessible name) and only shown on the current tab. */

@@ -42,6 +42,12 @@ async function renderPage(...handlers) {
 
 const row = (email) => screen.getByRole('row', { name: new RegExp(email) });
 
+// A row's actions live in its "⋯" menu.
+async function rowAction(email, item) {
+  await userEvent.click(await screen.findByRole('button', { name: `Actions for ${email}` }));
+  await userEvent.click(await screen.findByRole('menuitem', { name: item }));
+}
+
 describe('UsersPage', () => {
   it('is not found for a user who is not an administrator', async () => {
     server.use(withSession(USER));
@@ -57,7 +63,7 @@ describe('UsersPage', () => {
     expect(await screen.findByText('ana@example.com')).toBeInTheDocument();
     expect(within(row('admin@example.com')).getByText('Administrator')).toBeInTheDocument();
     expect(within(row('new@example.com')).getByText('Waiting for access')).toBeInTheDocument();
-    expect(within(row('ana@example.com')).getByText('Active')).toBeInTheDocument();
+    expect(within(row('ana@example.com')).queryByText('Disabled')).not.toBeInTheDocument();
     expect(within(row('off@example.com')).getByText('Disabled')).toBeInTheDocument();
   });
 
@@ -65,11 +71,21 @@ describe('UsersPage', () => {
     const { handler } = listing();
     await renderPage(handler);
 
-    await screen.findByText('ana@example.com');
-    expect(
-      screen.queryByRole('button', { name: 'Delete admin@example.com' }),
-    ).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Delete ana@example.com' })).toBeInTheDocument();
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Actions for admin@example.com' }),
+    );
+    const own = await screen.findAllByRole('menuitem');
+    expect(own.map((item) => item.textContent)).toEqual(['Edit user']);
+    await userEvent.keyboard('{Escape}');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Actions for ana@example.com' }));
+    await screen.findByRole('menuitem', { name: 'Delete user' });
+    const other = screen.getAllByRole('menuitem');
+    expect(other.map((item) => item.textContent)).toEqual([
+      'Edit user',
+      'Set password',
+      'Delete user',
+    ]);
   });
 
   it('searches and filters, back to the first page', async () => {
@@ -78,7 +94,8 @@ describe('UsersPage', () => {
 
     await userEvent.type(screen.getByRole('textbox', { name: 'Search' }), 'ana');
     await waitFor(() => expect(requests.at(-1).get('q')).toBe('ana'), { timeout: 2000 });
-    await userEvent.click(screen.getByRole('combobox', { name: 'Role' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Filters' }));
+    await userEvent.click(await screen.findByRole('combobox', { name: 'Role' }));
     await userEvent.click(await screen.findByRole('option', { name: 'Waiting for access' }));
     await waitFor(() => expect(requests.at(-1).get('role')).toBe('none'));
     await userEvent.click(screen.getByRole('combobox', { name: 'Status' }));
@@ -86,6 +103,7 @@ describe('UsersPage', () => {
 
     await waitFor(() => expect(requests.at(-1).get('active')).toBe('false'));
     expect(requests.at(-1).get('page')).toBe('1');
+    expect(screen.getByRole('button', { name: 'Filters (2)' })).toBeInTheDocument();
   });
 
   it('says when no user matches', async () => {
@@ -245,7 +263,7 @@ describe('UsersPage', () => {
       }),
     );
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Edit ana@example.com' }));
+    await rowAction('ana@example.com', 'Edit user');
     let dialog = await screen.findByRole('dialog', { name: 'Edit user' });
     await userEvent.click(within(dialog).getByRole('switch', { name: 'Active (can sign in)' }));
     await userEvent.click(within(dialog).getByRole('button', { name: 'Save changes' }));
@@ -259,7 +277,7 @@ describe('UsersPage', () => {
     });
     expect(await screen.findByText('Changes saved.')).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Edit ana@example.com' }));
+    await rowAction('ana@example.com', 'Edit user');
     dialog = await screen.findByRole('dialog', { name: 'Edit user' });
     await userEvent.click(within(dialog).getByRole('combobox', { name: 'Sign-in method' }));
     await userEvent.click(await screen.findByRole('option', { name: 'Password' }));
@@ -274,7 +292,7 @@ describe('UsersPage', () => {
       http.patch('/api/users/1', () => apiError(409, 'last_admin')),
     );
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Edit admin@example.com' }));
+    await rowAction('admin@example.com', 'Edit user');
     const dialog = await screen.findByRole('dialog', { name: 'Edit user' });
     await userEvent.click(within(dialog).getByRole('button', { name: 'Save changes' }));
     expect(await within(dialog).findByRole('alert')).toHaveTextContent(
@@ -286,7 +304,7 @@ describe('UsersPage', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Edit admin@example.com' })).toHaveFocus(),
+      expect(screen.getByRole('button', { name: 'Actions for admin@example.com' })).toHaveFocus(),
     );
   });
 
@@ -296,7 +314,7 @@ describe('UsersPage', () => {
       handler,
       http.delete('/api/users/3', () => new HttpResponse(null, { status: 204 })),
     );
-    await userEvent.click(await screen.findByRole('button', { name: 'Delete ana@example.com' }));
+    await rowAction('ana@example.com', 'Delete user');
     const dialog = await screen.findByRole('dialog', { name: 'Delete user' });
     expect(within(dialog).getByRole('button', { name: 'Close' })).toBeInTheDocument();
 
@@ -305,7 +323,7 @@ describe('UsersPage', () => {
 
     await waitFor(() =>
       expect(
-        screen.queryByRole('button', { name: 'Delete ana@example.com' }),
+        screen.queryByRole('button', { name: 'Actions for ana@example.com' }),
       ).not.toBeInTheDocument(),
     );
     await waitFor(() => expect(screen.getByRole('button', { name: 'New user' })).toHaveFocus());
@@ -322,9 +340,7 @@ describe('UsersPage', () => {
       }),
     );
 
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Set the password of ana@example.com' }),
-    );
+    await rowAction('ana@example.com', 'Set password');
     const dialog = await screen.findByRole('dialog', { name: 'Set password' });
     await userEvent.click(within(dialog).getByRole('button', { name: 'Set password' }));
     expect(await within(dialog).findByText('Required')).toBeInTheDocument();
@@ -340,7 +356,7 @@ describe('UsersPage', () => {
     const { handler } = listing();
     await renderPage(handler, http.delete('/api/users/3', remove));
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Delete ana@example.com' }));
+    await rowAction('ana@example.com', 'Delete user');
     const dialog = await screen.findByRole('dialog', { name: 'Delete user' });
     expect(
       within(dialog).getByText('Delete ana@example.com? This cannot be undone.'),
@@ -358,7 +374,7 @@ describe('UsersPage', () => {
       http.delete('/api/users/3', () => apiError(409, 'cannot_delete_self')),
     );
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Delete ana@example.com' }));
+    await rowAction('ana@example.com', 'Delete user');
     const dialog = await screen.findByRole('dialog', { name: 'Delete user' });
     await userEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
 

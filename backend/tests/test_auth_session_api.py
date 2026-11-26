@@ -97,21 +97,29 @@ async def test_me_returns_the_profile(client, make_user):
     assert body["email"] == "ana@example.com"
     assert body["first_name"] == "Ana"
     assert body["role"] == "user"
+    assert body["timezone"] == "UTC"
     assert "password_hash" not in body
 
 
-async def test_profile_update_changes_name_language_and_theme(client, make_user):
+async def test_profile_update_changes_name_language_theme_and_timezone(client, make_user):
     token = await _login(client, make_user)
 
     response = await client.patch(
         "/api/auth/me",
         headers=auth(token),
-        json={"first_name": "  Ana ", "last_name": "Pérez", "language": "gl", "theme": "dark"},
+        json={
+            "first_name": "  Ana ",
+            "last_name": "Pérez",
+            "language": "gl",
+            "theme": "dark",
+            "timezone": "Europe/Madrid",
+        },
     )
 
     body = response.json()
     assert (body["first_name"], body["last_name"]) == ("Ana", "Pérez")
     assert (body["language"], body["theme"]) == (Language.gl.value, Theme.dark.value)
+    assert body["timezone"] == "Europe/Madrid"
 
 
 @pytest.mark.parametrize(
@@ -120,6 +128,7 @@ async def test_profile_update_changes_name_language_and_theme(client, make_user)
         {"first_name": "   "},
         {"first_name": "A\x00"},
         {"language": "fr"},
+        {"timezone": "Mars/Olympus_Mons"},
         {"role": "admin"},
         {"email": "x@example.com"},
     ],

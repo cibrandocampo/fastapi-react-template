@@ -1,4 +1,4 @@
-import { Anchor, Button, Group, Stack, Text, Title } from '@mantine/core';
+import { Button, Group, Stack, Text, Title } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
 import { Link, Navigate } from 'react-router';
 
@@ -7,7 +7,7 @@ import { useAuth } from '../auth/useAuth';
 // Signed-up account without permissions yet: an administrator has to grant access.
 export function WaitingPage() {
   const { t } = useTranslation();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   if (user.role !== 'none') return <Navigate to="/" replace />;
 
@@ -20,9 +20,6 @@ export function WaitingPage() {
         <Button component={Link} to="/profile" variant="default">
           {t('waiting.profile')}
         </Button>
-        <Anchor component="button" type="button" onClick={logout}>
-          {t('user.logout')}
-        </Anchor>
       </Group>
     </Stack>
   );

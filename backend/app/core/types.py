@@ -4,10 +4,11 @@ PostgreSQL text cannot hold the NUL character: every user-supplied string goes t
 types so a NUL is a 422 at the boundary instead of a database error.
 """
 
+import zoneinfo
 from typing import Annotated
 
 from fastapi import Path
-from pydantic import StringConstraints
+from pydantic import AfterValidator, StringConstraints
 
 NO_NUL = r"^[^\x00]*$"
 # Names are shown to other users: no control characters, zero-width characters or bidirectional
@@ -25,3 +26,13 @@ OptionalName = Annotated[
 Secret = Annotated[str, StringConstraints(max_length=1024, pattern=NO_NUL)]
 Code = Annotated[str, StringConstraints(max_length=12, pattern=NO_NUL)]
 IdPath = Annotated[int, Path(ge=1, le=MAX_DB_INT)]
+
+
+def _known_time_zone(value: str) -> str:
+    if value not in zoneinfo.available_timezones():
+        raise ValueError("unknown IANA time zone")
+    return value
+
+
+# An IANA time zone name, e.g. "Europe/Madrid".
+TimeZone = Annotated[str, StringConstraints(max_length=64), AfterValidator(_known_time_zone)]

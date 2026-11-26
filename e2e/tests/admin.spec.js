@@ -14,7 +14,7 @@ test('an administrator creates a user', async ({ page }) => {
   const row = await openUser(page, email);
   await expect(row).toContainText('Brais Otero');
   await expect(row).toContainText('User');
-  await expect(row).toContainText('Active');
+  await expect(row).not.toContainText('Disabled');
 });
 
 test('a deactivated user can no longer sign in', async ({ page, browser }) => {
@@ -22,7 +22,8 @@ test('a deactivated user can no longer sign in', async ({ page, browser }) => {
   await createUser(page, { email });
 
   const row = await openUser(page, email);
-  await row.getByRole('button', { name: `Edit ${email}` }).click();
+  await row.getByRole('button', { name: `Actions for ${email}` }).click();
+  await page.getByRole('menuitem', { name: 'Edit user' }).click();
   const dialog = page.getByRole('dialog', { name: 'Edit user' });
   // Toggled from the keyboard: Mantine's switch input is visually hidden under its track.
   const active = dialog.getByRole('switch', { name: 'Active (can sign in)' });
@@ -44,7 +45,8 @@ test('a deactivated user can no longer sign in', async ({ page, browser }) => {
 
 test('the last administrator cannot stop being one', async ({ page }) => {
   const row = await openUser(page, ADMIN.email);
-  await row.getByRole('button', { name: `Edit ${ADMIN.email}` }).click();
+  await row.getByRole('button', { name: `Actions for ${ADMIN.email}` }).click();
+  await page.getByRole('menuitem', { name: 'Edit user' }).click();
   const dialog = page.getByRole('dialog', { name: 'Edit user' });
 
   await dialog.getByRole('combobox', { name: 'Role' }).click();

@@ -29,6 +29,9 @@ globalThis.ResizeObserver ??= class {
   disconnect() {}
 };
 Element.prototype.scrollIntoView ??= () => {};
+// Web Animations (BottomNav's sliding pill).
+Element.prototype.getAnimations ??= () => [];
+Element.prototype.animate ??= () => ({ cancel() {}, finish() {} });
 
 beforeAll(async () => {
   server.listen({ onUnhandledRequest: 'error' });

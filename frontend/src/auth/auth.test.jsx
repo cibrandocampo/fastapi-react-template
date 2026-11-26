@@ -92,10 +92,13 @@ describe('session', () => {
   });
 });
 
+// Once signed in, the menus are only on the screens before the app: the welcome step of a new account.
+const newUser = (overrides) => makeUser({ first_name: '', last_name: '', ...overrides });
+
 describe('preferences menus', () => {
   it('tells the user when a colour scheme could not be saved', async () => {
     server.use(
-      withSession(),
+      withSession(newUser()),
       http.patch('/api/auth/me', () => apiError(500, 'boom')),
     );
     renderWithProviders(<AppRoutes />);
@@ -108,7 +111,7 @@ describe('preferences menus', () => {
 
   it('tells the user when a preference could not be saved', async () => {
     server.use(
-      withSession(),
+      withSession(newUser()),
       http.patch('/api/auth/me', () => apiError(500, 'boom')),
     );
     renderWithProviders(<AppRoutes />);
@@ -132,10 +135,10 @@ describe('preferences menus', () => {
   it('saves the system colour scheme as "system"', async () => {
     let saved;
     server.use(
-      withSession(makeUser({ theme: 'dark' })),
+      withSession(newUser({ theme: 'dark' })),
       http.patch('/api/auth/me', async ({ request }) => {
         saved = await request.json();
-        return HttpResponse.json(makeUser({ theme: saved.theme }));
+        return HttpResponse.json(newUser({ theme: saved.theme }));
       }),
     );
     renderWithProviders(<AppRoutes />);
@@ -158,10 +161,10 @@ describe('preferences menus', () => {
   it("saves the language in a logged-in user's profile", async () => {
     let saved;
     server.use(
-      withSession(),
+      withSession(newUser()),
       http.patch('/api/auth/me', async ({ request }) => {
         saved = await request.json();
-        return HttpResponse.json(makeUser({ language: saved.language }));
+        return HttpResponse.json(newUser({ language: saved.language }));
       }),
     );
     renderWithProviders(<AppRoutes />);
@@ -170,6 +173,6 @@ describe('preferences menus', () => {
     await userEvent.click(await screen.findByRole('menuitem', { name: 'Galego' }));
 
     await waitFor(() => expect(saved).toEqual({ language: 'gl' }));
-    expect(await screen.findByRole('heading', { name: 'Benvida' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Dámosche a benvida!' })).toBeInTheDocument();
   });
 });

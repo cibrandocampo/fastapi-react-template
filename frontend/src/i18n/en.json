@@ -31,6 +31,13 @@
   "language": {
     "label": "Language"
   },
+  "timezone": {
+    "label": "Time zone",
+    "nothingFound": "No time zone matches.",
+    "search": "Search time zone",
+    "detected": "Your browser is in {{zone}}.",
+    "useDetected": "Use it"
+  },
   "user": {
     "logout": "Log out"
   },
@@ -89,22 +96,17 @@
   },
   "profile": {
     "title": "Profile",
-    "name": "Name",
     "saveName": "Save name",
     "saved": "Profile saved.",
     "preferences": "Preferences",
-    "session": "Session",
+    "editName": "Edit name",
     "password": {
-      "title": "Password",
-      "helpChange": "Change the password you sign in with.",
-      "helpSet": "You sign in with a code sent by email. Set a password to sign in with it instead.",
       "current": "Current password",
       "new": "New password",
       "confirm": "Repeat the new password",
       "rules": "At least 10 characters, not only digits, not your email.",
       "mismatch": "The passwords do not match.",
       "change": "Change password",
-      "set": "Set password",
       "saved": "Password saved. Your other sessions have been closed.",
       "errors": {
         "invalid_credentials": "The current password is not correct.",
@@ -122,6 +124,11 @@
     "status": "Status",
     "name": "Name",
     "actions": "Actions",
+    "actionsFor": "Actions for {{email}}",
+    "filters": {
+      "open": "Filters",
+      "active": "Filters ({{count}})"
+    },
     "activeState": "Active",
     "inactiveState": "Disabled",
     "active": "Active (can sign in)",
@@ -141,19 +148,16 @@
     },
     "edit": {
       "title": "Edit user",
-      "label": "Edit {{email}}",
       "saved": "Changes saved."
     },
     "password": {
       "title": "Set password",
-      "label": "Set the password of {{email}}",
       "help": "{{email}} will sign in with this password. Their open sessions will be closed.",
       "submit": "Set password",
       "saved": "Password set."
     },
     "delete": {
       "title": "Delete user",
-      "label": "Delete {{email}}",
       "confirm": "Delete {{email}}? This cannot be undone.",
       "submit": "Delete",
       "done": "{{email}} has been deleted."

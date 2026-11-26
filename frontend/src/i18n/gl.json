@@ -31,6 +31,13 @@
   "language": {
     "label": "Idioma"
   },
+  "timezone": {
+    "label": "Fuso horario",
+    "nothingFound": "Ningún fuso horario coincide.",
+    "search": "Buscar fuso horario",
+    "detected": "O teu navegador está en {{zone}}.",
+    "useDetected": "Usalo"
+  },
   "user": {
     "logout": "Pechar sesión"
   },
@@ -89,22 +96,17 @@
   },
   "profile": {
     "title": "Perfil",
-    "name": "Nome",
     "saveName": "Gardar nome",
     "saved": "Perfil gardado.",
     "preferences": "Preferencias",
-    "session": "Sesión",
+    "editName": "Editar nome",
     "password": {
-      "title": "Contrasinal",
-      "helpChange": "Cambia o contrasinal co que entras.",
-      "helpSet": "Entras cun código que che enviamos por correo. Crea un contrasinal para entrar con el.",
       "current": "Contrasinal actual",
       "new": "Novo contrasinal",
       "confirm": "Repite o novo contrasinal",
       "rules": "Polo menos 10 caracteres, non só cifras e distinto do teu correo.",
       "mismatch": "Os contrasinais non coinciden.",
       "change": "Cambiar contrasinal",
-      "set": "Crear contrasinal",
       "saved": "Contrasinal gardado. Pecháronse as túas outras sesións.",
       "errors": {
         "invalid_credentials": "O contrasinal actual non é correcto.",
@@ -122,6 +124,11 @@
     "status": "Estado",
     "name": "Nome",
     "actions": "Accións",
+    "actionsFor": "Accións de {{email}}",
+    "filters": {
+      "open": "Filtros",
+      "active": "Filtros ({{count}})"
+    },
     "activeState": "Activo",
     "inactiveState": "Desactivado",
     "active": "Activo (pode entrar)",
@@ -141,19 +148,16 @@
     },
     "edit": {
       "title": "Editar usuario",
-      "label": "Editar {{email}}",
       "saved": "Cambios gardados."
     },
     "password": {
       "title": "Poñer contrasinal",
-      "label": "Poñer o contrasinal de {{email}}",
       "help": "{{email}} entrará con este contrasinal. Pecharanse as súas sesións abertas.",
       "submit": "Poñer contrasinal",
       "saved": "Contrasinal posto."
     },
     "delete": {
       "title": "Borrar usuario",
-      "label": "Borrar {{email}}",
       "confirm": "Borrar {{email}}? Non se pode desfacer.",
       "submit": "Borrar",
       "done": "{{email}} borrouse."

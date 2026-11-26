@@ -1,41 +1,53 @@
 import {
+  ActionIcon,
   Alert,
+  Anchor,
+  Avatar,
   Badge,
   Button,
   Group,
+  Modal,
   PasswordInput,
   SegmentedControl,
-  Select,
   Stack,
   Text,
   TextInput,
   Title,
+  Tooltip,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
+import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { LogOut } from 'lucide-react';
+import { KeyRound, Pencil, UserRound } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { notifyError } from '../api/queryClient';
 import { useAuth } from '../auth/useAuth';
 import { LANGUAGE_NAMES, LANGUAGES } from '../i18n';
+import { TimeZonePicker } from '../components/TimeZonePicker';
+import { browserTimeZone } from '../timeZones';
 import classes from './ProfilePage.module.css';
 
 const PASSWORD_ERRORS = ['invalid_credentials', 'weak_password', 'rate_limited'];
 
-function Section({ title, children }) {
+// Name and password change rarely: each opens in a dialog over the page. The dialog's content mounts on
+// open (fresh fields each time) and Mantine gives the focus back to the button that opened it.
+function ProfileDialog({ opened, onClose, title, children }) {
+  const { t } = useTranslation();
   return (
-    <section className={classes.section}>
-      <Title order={2} size="h3">
-        {title}
-      </Title>
+    <Modal
+      closeButtonProps={{ 'aria-label': t('common.close') }}
+      opened={opened}
+      onClose={onClose}
+      title={title}
+    >
       {children}
-    </section>
+    </Modal>
   );
 }
 
-function NameForm() {
+function NameForm({ onClose }) {
   const { t } = useTranslation();
   const { user, updateProfile } = useAuth();
   const form = useForm({
@@ -53,6 +65,7 @@ function NameForm() {
         last_name: values.last_name.trim(),
       });
       notifications.show({ color: 'teal', message: t('profile.saved') });
+      onClose();
     } catch (error) {
       notifyError(error);
     }
@@ -64,6 +77,7 @@ function NameForm() {
         <TextInput
           label={t('welcome.firstName')}
           autoComplete="given-name"
+          data-autofocus
           required
           {...form.getInputProps('first_name')}
         />
@@ -73,59 +87,27 @@ function NameForm() {
           required
           {...form.getInputProps('last_name')}
         />
-        <Button type="submit" w="fit-content" loading={form.submitting}>
-          {t('profile.saveName')}
-        </Button>
+        <Group justify="flex-end">
+          <Button variant="default" onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
+          <Button type="submit" loading={form.submitting}>
+            {t('profile.saveName')}
+          </Button>
+        </Group>
       </Stack>
     </form>
   );
 }
 
-function Preferences() {
+function PasswordForm({ onClose }) {
   const { t } = useTranslation();
-  const { user, updateProfile } = useAuth();
-  // Saved at once; the session applies the user's language and colour scheme when they change.
-  const save = (changes) => updateProfile(changes).catch(notifyError);
-
-  return (
-    <Stack>
-      <Select
-        label={t('language.label')}
-        data={LANGUAGES.map((value) => ({ value, label: LANGUAGE_NAMES[value] }))}
-        value={user.language}
-        onChange={(language) => language && save({ language })}
-        allowDeselect={false}
-        w={240}
-      />
-      <Stack gap={4}>
-        <Text id="profile-theme" fw={500} size="sm">
-          {t('colorScheme.label')}
-        </Text>
-        <SegmentedControl
-          aria-labelledby="profile-theme"
-          value={user.theme}
-          onChange={(theme) => save({ theme })}
-          data={[
-            { value: 'light', label: t('colorScheme.light') },
-            { value: 'dark', label: t('colorScheme.dark') },
-            { value: 'system', label: t('colorScheme.auto') },
-          ]}
-          w="fit-content"
-        />
-      </Stack>
-    </Stack>
-  );
-}
-
-function PasswordForm() {
-  const { t } = useTranslation();
-  const { user, changePassword } = useAuth();
-  const hasPassword = user.auth_method === 'password';
+  const { changePassword } = useAuth();
   const [error, setError] = useState(null);
   const form = useForm({
     initialValues: { current_password: '', new_password: '', confirm: '' },
     validate: {
-      current_password: (value) => (hasPassword && !value ? t('welcome.required') : null),
+      current_password: (value) => (value ? null : t('welcome.required')),
       new_password: (value) => (value ? null : t('welcome.required')),
       confirm: (value, values) =>
         value === values.new_password ? null : t('profile.password.mismatch'),
@@ -136,11 +118,11 @@ function PasswordForm() {
     setError(null);
     try {
       await changePassword({
-        ...(hasPassword ? { current_password: values.current_password } : {}),
+        current_password: values.current_password,
         new_password: values.new_password,
       });
-      form.reset();
       notifications.show({ color: 'teal', message: t('profile.password.saved') });
+      onClose();
     } catch (err) {
       setError(PASSWORD_ERRORS.includes(err.code) ? err.code : 'generic');
     }
@@ -149,17 +131,13 @@ function PasswordForm() {
   return (
     <form onSubmit={save} noValidate>
       <Stack>
-        <Text c="dimmed" size="sm">
-          {hasPassword ? t('profile.password.helpChange') : t('profile.password.helpSet')}
-        </Text>
-        {hasPassword && (
-          <PasswordInput
-            label={t('profile.password.current')}
-            autoComplete="current-password"
-            required
-            {...form.getInputProps('current_password')}
-          />
-        )}
+        <PasswordInput
+          label={t('profile.password.current')}
+          autoComplete="current-password"
+          data-autofocus
+          required
+          {...form.getInputProps('current_password')}
+        />
         <PasswordInput
           label={t('profile.password.new')}
           description={t('profile.password.rules')}
@@ -178,46 +156,155 @@ function PasswordForm() {
             {t(`profile.password.errors.${error}`)}
           </Alert>
         )}
-        <Button type="submit" w="fit-content" loading={form.submitting}>
-          {hasPassword ? t('profile.password.change') : t('profile.password.set')}
-        </Button>
+        <Group justify="flex-end">
+          <Button variant="default" onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
+          <Button type="submit" loading={form.submitting}>
+            {t('profile.password.change')}
+          </Button>
+        </Group>
       </Stack>
     </form>
   );
 }
 
-export function ProfilePage() {
+// Who is signed in: picture placeholder, name with its pencil, email and account type. Accounts that
+// sign in with a password change it from the key on the right; code accounts have nothing to change.
+function Identity() {
   const { t } = useTranslation();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const [nameOpen, name] = useDisclosure(false);
+  const [passwordOpen, password] = useDisclosure(false);
 
   return (
-    <Stack gap="xl" maw={560}>
-      <Stack gap={4}>
-        <Title order={1}>{t('profile.title')}</Title>
+    <Group gap="md" wrap="nowrap" align="center">
+      <Avatar size={64} radius="100%" color="slate" variant="filled" aria-hidden>
+        <UserRound size={32} />
+      </Avatar>
+      <Stack gap={4} className={classes.identity}>
+        <Group gap={4} wrap="nowrap">
+          <Title order={2} size="h3" className={classes.name}>
+            {`${user.first_name} ${user.last_name}`.trim()}
+          </Title>
+          <Tooltip label={t('profile.editName')}>
+            <ActionIcon variant="subtle" aria-label={t('profile.editName')} onClick={name.open}>
+              <Pencil size={16} aria-hidden />
+            </ActionIcon>
+          </Tooltip>
+        </Group>
         <Group gap="xs">
-          <Text c="dimmed">{user.email}</Text>
+          <Text c="dimmed" className={classes.email}>
+            {user.email}
+          </Text>
           <Badge variant="light">{t(`roles.${user.role}`)}</Badge>
         </Group>
       </Stack>
-      <Section title={t('profile.name')}>
-        <NameForm />
-      </Section>
-      <Section title={t('profile.preferences')}>
-        <Preferences />
-      </Section>
-      <Section title={t('profile.password.title')}>
-        <PasswordForm />
-      </Section>
-      <Section title={t('profile.session')}>
-        <Button
-          variant="default"
-          leftSection={<LogOut size={16} aria-hidden />}
-          onClick={logout}
-          w="fit-content"
-        >
-          {t('user.logout')}
-        </Button>
-      </Section>
+      {user.auth_method === 'password' && (
+        <Tooltip label={t('profile.password.change')}>
+          <ActionIcon
+            variant="default"
+            size="lg"
+            aria-label={t('profile.password.change')}
+            onClick={password.open}
+          >
+            <KeyRound size={18} aria-hidden />
+          </ActionIcon>
+        </Tooltip>
+      )}
+      <ProfileDialog opened={nameOpen} onClose={name.close} title={t('profile.editName')}>
+        <NameForm onClose={name.close} />
+      </ProfileDialog>
+      <ProfileDialog
+        opened={passwordOpen}
+        onClose={password.close}
+        title={t('profile.password.change')}
+      >
+        <PasswordForm onClose={password.close} />
+      </ProfileDialog>
+    </Group>
+  );
+}
+
+// One preference: its name over a full-width control. Every control has the same size.
+function Preference({ id, label, children }) {
+  return (
+    <Stack gap={6}>
+      <Text id={id} fw={500}>
+        {label}
+      </Text>
+      {children}
+    </Stack>
+  );
+}
+
+function Preferences() {
+  const { t } = useTranslation();
+  const { user, updateProfile } = useAuth();
+  // Saved at once; the session applies the user's language and colour scheme when they change.
+  const save = (changes) => updateProfile(changes).catch(notifyError);
+  const detected = browserTimeZone();
+
+  return (
+    <section className={classes.section}>
+      <Title order={2} size="h3">
+        {t('profile.preferences')}
+      </Title>
+      <Preference id="profile-language" label={t('language.label')}>
+        <SegmentedControl
+          aria-labelledby="profile-language"
+          value={user.language}
+          onChange={(language) => save({ language })}
+          data={LANGUAGES.map((value) => ({ value, label: LANGUAGE_NAMES[value] }))}
+          fullWidth
+          classNames={{ root: classes.choice, label: classes.choiceLabel }}
+          size="sm"
+        />
+      </Preference>
+      <Preference id="profile-theme" label={t('colorScheme.label')}>
+        <SegmentedControl
+          aria-labelledby="profile-theme"
+          value={user.theme}
+          onChange={(theme) => save({ theme })}
+          data={[
+            { value: 'light', label: t('colorScheme.light') },
+            { value: 'dark', label: t('colorScheme.dark') },
+            { value: 'system', label: t('colorScheme.auto') },
+          ]}
+          fullWidth
+          classNames={{ root: classes.choice, label: classes.choiceLabel }}
+          size="sm"
+        />
+      </Preference>
+      <Preference id="profile-timezone" label={t('timezone.label')}>
+        <TimeZonePicker
+          labelId="profile-timezone"
+          value={user.timezone}
+          onChange={(timezone) => save({ timezone })}
+          className={classes.field}
+        />
+        {/* A new account starts in UTC: offer the browser's zone instead of guessing silently. */}
+        {user.timezone === 'UTC' && detected && detected !== 'UTC' && (
+          <Text size="sm" c="dimmed">
+            {t('timezone.detected', { zone: detected })}{' '}
+            <Anchor component="button" type="button" onClick={() => save({ timezone: detected })}>
+              {t('timezone.useDetected')}
+            </Anchor>
+          </Text>
+        )}
+      </Preference>
+    </section>
+  );
+}
+
+export function ProfilePage() {
+  const { t } = useTranslation();
+
+  return (
+    <Stack gap="xl" maw={560}>
+      <Title order={1}>{t('profile.title')}</Title>
+      <Identity />
+      <Preferences />
     </Stack>
   );
 }

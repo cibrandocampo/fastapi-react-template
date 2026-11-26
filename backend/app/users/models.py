@@ -65,6 +65,9 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(default=False)
     language: Mapped[Language] = mapped_column(_enum(Language), default=Language.en)
     theme: Mapped[Theme] = mapped_column(_enum(Theme), default=Theme.system)
+    # IANA name, e.g. "Europe/Madrid". UTC until the user picks one (the app proposes the
+    # browser's).
+    timezone: Mapped[str] = mapped_column(String(64), default="UTC", server_default="UTC")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

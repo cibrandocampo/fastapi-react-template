@@ -1,6 +1,6 @@
 import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { AppRoutes } from '../App';
 import { renderWithProviders } from '../test/render';
@@ -87,5 +87,60 @@ describe('BottomNav', () => {
     expect(content.className).toMatch(/content/);
     expect(content.style.paddingBottom).toBe('');
     expect(content.style.paddingBlock).toBe('');
+  });
+
+  it('slides the pill to the new tab', async () => {
+    const animate = vi.spyOn(Element.prototype, 'animate');
+    server.use(withSession());
+    renderWithProviders(<AppRoutes />);
+    const list = (await nav()).querySelector('ul');
+
+    await userEvent.click(screen.getByRole('link', { name: 'Profile' }));
+
+    await waitFor(() => expect(animate).toHaveBeenCalledTimes(1));
+    expect(animate.mock.contexts[0]).toBe(list);
+    expect(animate.mock.calls[0][1]).toMatchObject({ duration: 200, pseudoElement: '::before' });
+    animate.mockRestore();
+  });
+
+  it('does not slide the pill when reduced motion is preferred', async () => {
+    const animate = vi.spyOn(Element.prototype, 'animate');
+    const matchMedia = vi.spyOn(window, 'matchMedia').mockImplementation((query) => ({
+      matches: query.includes('reduce'),
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+    }));
+    server.use(withSession());
+    const { router } = renderWithProviders(<AppRoutes />);
+    await nav();
+
+    await userEvent.click(screen.getByRole('link', { name: 'Profile' }));
+
+    await waitFor(() => expect(router.location.pathname).toBe('/profile'));
+    expect(animate).not.toHaveBeenCalled();
+    animate.mockRestore();
+    matchMedia.mockRestore();
+  });
+
+  // Re-applying the saved colour scheme on every render made Mantine switch every CSS transition
+  // off for a moment on each navigation, which cut the pill and label animations.
+  it('keeps CSS transitions on while navigating', async () => {
+    const appendChild = vi.spyOn(document.head, 'appendChild');
+    server.use(withSession());
+    const { router } = renderWithProviders(<AppRoutes />);
+    await nav();
+    appendChild.mockClear();
+
+    await userEvent.click(screen.getByRole('link', { name: 'Profile' }));
+
+    await waitFor(() => expect(router.location.pathname).toBe('/profile'));
+    const disabling = appendChild.mock.calls.filter(([node]) =>
+      node.hasAttribute?.('data-mantine-disable-transition'),
+    );
+    expect(disabling).toEqual([]);
+    appendChild.mockRestore();
   });
 });

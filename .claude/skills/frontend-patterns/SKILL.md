@@ -87,9 +87,24 @@ Minimal and professional, from nudge's palette; made with the `frontend-design` 
 - **Shape**: radius 6 px (controls), 8 px (surfaces), avatars round. Borders separate surfaces; shadows only on floating
   layers (menus, notifications).
 - **Layout**: screens before the app use `AuthLayout` (same 1080 px container and 56 px top row as the shell,
-  so the brand does not move; a 360 px left-aligned column, no card). The app uses `AppLayout` (56 px top bar with a bottom border, content in a
+  so the brand does not move; a 360 px column, no card: left-aligned with the brand on wide screens,
+  centred on phones up to 48 em). The app uses `AppLayout` (56 px top bar with a bottom border, content in a
   1080 px container, left-aligned). Pages start with an h1.
-- **Motion**: none decorative; Mantine transitions only on things the user opened; reduced motion respected.
+- **Motion**: none decorative; Mantine transitions only on things the user opened, plus the bottom
+  navigation's 200 ms tab change; reduced motion respected. Never call Mantine's `setColorScheme` unless the
+  scheme really changes: every call switches off all CSS transitions on the page for a moment.
+- **Progressive disclosure**: pages show content read-only; rare actions open on demand and close when
+  done. A pencil or an icon button opens the form in a dialog (`Modal`, named close button, Cancel and
+  Save on the right, `data-autofocus` on the first field; the form mounts inside the dialog so each
+  opening starts fresh, and Mantine returns the focus to the trigger). The profile shows who is signed in
+  (round picture placeholder; name with its pencil; email and account type; a key icon on the right,
+  "Change password", only for password accounts) over its preferences. Preferences save at once and share one look: name over a full-width, large control, all the
+  same height (`SegmentedControl` for short choices such as language and colour scheme, a searchable
+  `Select` for long lists such as the time zone). Lists keep the frequent action visible (search; "Grant access" on a waiting account) and fold the
+  rest: secondary filters in a "Filters (n)" popover, row actions in one "⋯" menu (destructive last, in
+  red, after a divider). Tables fit a phone without scrolling sideways: combine cells (name over email),
+  show states as badges, narrow columns on small screens.
+- **Scroll**: `scrollbar-gutter: stable` on the root, so short and long pages do not shift sideways.
 - **Copy**: plain, active, sentence case; errors say what happened and what to do.
 - Contrast of every token pair is checked (all ≥ 4.5:1 text, ≥ 3:1 controls): T015 evidence `contrast.txt`.
 - Dark-mode fills: `base.css` maps Mantine's `--mantine-color-white` to the on-filled colour on elements that
@@ -114,14 +129,18 @@ Minimal and professional, from nudge's palette; made with the `frontend-design` 
   `aria-label`.
 - `BottomNav` is the app's only navigation: fixed to the bottom on every screen size, `--nav-h` (64 px) plus
   `env(safe-area-inset-bottom)`. The current tab is a slate pill with icon and label; the others show the icon
-  only, with the label kept in the DOM as the accessible name. Tabs are declared in `TABS` with the minimum
+  only, with the label kept in the DOM as the accessible name. The pill is one element (`ul::before`, anchored
+  to the current tab with CSS anchor positioning); on a tab change `useSlidingPill` slides it from the old tab
+  to the new one in 200 ms, in step with the labels folding and unfolding (without anchor support the current
+  tab paints its own pill and nothing slides). Tabs are declared in `TABS` with the minimum
   role (`none`/`user`/`admin`); the bar is not rendered with fewer than two tabs or while the on-screen
   keyboard is open (`useKeyboardOpen`, ignoring pinch zoom).
 - Space under the bar: the shell's content reserves `--nav-h` + safe area + 2 rem at the bottom, and
   `:root:has([data-bottom-nav])` sets `scroll-padding-bottom` so focused fields are never hidden under it.
   Do not override the content's bottom padding (`py` on the container would).
-- The top bar holds the brand, language and colour-scheme menus. Account actions (profile, password, log out)
-  live on `/profile`.
+- The app's top bar holds the brand and, on the right, log out (plus whatever actions each app adds). Language
+  and colour scheme are set in `/profile` once signed in; the language and colour-scheme menus appear only on
+  the screens before the app (`AuthLayout`: login, welcome). Name and password live on `/profile`.
 - Dialogs: name the close button (`closeButtonProps={{ 'aria-label': t('common.close') }}`); a dialog mounted
   on open must give focus back to its trigger on close (or a stable fallback); a failed action moves focus to
   its error alert.

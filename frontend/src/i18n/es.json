@@ -31,6 +31,13 @@
   "language": {
     "label": "Idioma"
   },
+  "timezone": {
+    "label": "Zona horaria",
+    "nothingFound": "Ninguna zona horaria coincide.",
+    "search": "Buscar zona horaria",
+    "detected": "Tu navegador está en {{zone}}.",
+    "useDetected": "Usarla"
+  },
   "user": {
     "logout": "Cerrar sesión"
   },
@@ -89,22 +96,17 @@
   },
   "profile": {
     "title": "Perfil",
-    "name": "Nombre",
     "saveName": "Guardar nombre",
     "saved": "Perfil guardado.",
     "preferences": "Preferencias",
-    "session": "Sesión",
+    "editName": "Editar nombre",
     "password": {
-      "title": "Contraseña",
-      "helpChange": "Cambia la contraseña con la que entras.",
-      "helpSet": "Entras con un código que te enviamos por correo. Crea una contraseña para entrar con ella.",
       "current": "Contraseña actual",
       "new": "Nueva contraseña",
       "confirm": "Repite la nueva contraseña",
       "rules": "Al menos 10 caracteres, no solo cifras y distinta de tu correo.",
       "mismatch": "Las contraseñas no coinciden.",
       "change": "Cambiar contraseña",
-      "set": "Crear contraseña",
       "saved": "Contraseña guardada. Se han cerrado tus otras sesiones.",
       "errors": {
         "invalid_credentials": "La contraseña actual no es correcta.",
@@ -122,6 +124,11 @@
     "status": "Estado",
     "name": "Nombre",
     "actions": "Acciones",
+    "actionsFor": "Acciones de {{email}}",
+    "filters": {
+      "open": "Filtros",
+      "active": "Filtros ({{count}})"
+    },
     "activeState": "Activo",
     "inactiveState": "Desactivado",
     "active": "Activo (puede entrar)",
@@ -141,19 +148,16 @@
     },
     "edit": {
       "title": "Editar usuario",
-      "label": "Editar {{email}}",
       "saved": "Cambios guardados."
     },
     "password": {
       "title": "Poner contraseña",
-      "label": "Poner la contraseña de {{email}}",
       "help": "{{email}} entrará con esta contraseña. Se cerrarán sus sesiones abiertas.",
       "submit": "Poner contraseña",
       "saved": "Contraseña puesta."
     },
     "delete": {
       "title": "Borrar usuario",
-      "label": "Borrar {{email}}",
       "confirm": "¿Borrar {{email}}? No se puede deshacer.",
       "submit": "Borrar",
       "done": "{{email}} se ha borrado."

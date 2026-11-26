@@ -1,7 +1,7 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { AppRoutes } from '../App';
 import i18n from '../i18n';
@@ -16,6 +16,18 @@ function patchMe(onBody) {
   });
 }
 
+// Name and password are changed rarely: their forms open on demand.
+const openName = async () =>
+  userEvent.click(await screen.findByRole('button', { name: 'Edit name' }));
+const openPassword = async (name) => userEvent.click(await screen.findByRole('button', { name }));
+// The dialog's submit button has the same name as the key that opened it.
+const submitPassword = () =>
+  userEvent.click(
+    within(screen.getByRole('dialog', { name: 'Change password' })).getByRole('button', {
+      name: 'Change password',
+    }),
+  );
+
 describe('ProfilePage', () => {
   it('shows the account and saves a new name', async () => {
     let saved;
@@ -27,20 +39,56 @@ describe('ProfilePage', () => {
 
     expect(await screen.findByRole('heading', { name: 'Profile' })).toBeInTheDocument();
     expect(screen.getByText('ana@example.com')).toBeInTheDocument();
+    await openName();
     const first = screen.getByLabelText(/First name/);
+    await waitFor(() => expect(first).toHaveFocus());
     await userEvent.clear(first);
     await userEvent.type(first, ' Uxía ');
     await userEvent.click(screen.getByRole('button', { name: 'Save name' }));
 
     await waitFor(() => expect(saved).toEqual({ first_name: 'Uxía', last_name: 'Pérez' }));
     expect(await screen.findByText('Profile saved.')).toBeInTheDocument();
+    expect(await screen.findByText('Uxía Pérez')).toBeInTheDocument();
+    expect(screen.queryByLabelText(/First name/)).not.toBeInTheDocument();
+  });
+
+  it('shows who is signed in with the name and password forms closed', async () => {
+    server.use(withSession(makeUser({ auth_method: 'password' })));
+    renderWithProviders(<AppRoutes />, { route: '/profile' });
+
+    expect(await screen.findByRole('heading', { name: 'Ana Pérez' })).toBeInTheDocument();
+    expect(screen.getByText('ana@example.com')).toBeInTheDocument();
+    expect(screen.getByText('User')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Change password' })).toBeInTheDocument();
+    expect(screen.queryByLabelText(/First name/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Current password/)).not.toBeInTheDocument();
+  });
+
+  it('offers no password change to an account that signs in with emailed codes', async () => {
+    server.use(withSession());
+    renderWithProviders(<AppRoutes />, { route: '/profile' });
+
+    await screen.findByRole('heading', { name: 'Ana Pérez' });
+    expect(screen.queryByRole('button', { name: 'Change password' })).not.toBeInTheDocument();
+  });
+
+  it('closes a form on cancel and gives the focus back to its button', async () => {
+    server.use(withSession());
+    renderWithProviders(<AppRoutes />, { route: '/profile' });
+
+    await openName();
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.queryByLabelText(/First name/)).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Edit name' })).toHaveFocus());
   });
 
   it('requires both names', async () => {
     server.use(withSession());
     renderWithProviders(<AppRoutes />, { route: '/profile' });
 
-    await userEvent.clear(await screen.findByLabelText(/Last name/));
+    await openName();
+    await userEvent.clear(screen.getByLabelText(/Last name/));
     await userEvent.click(screen.getByRole('button', { name: 'Save name' }));
 
     expect(await screen.findByText('Required')).toBeInTheDocument();
@@ -53,7 +101,8 @@ describe('ProfilePage', () => {
     );
     renderWithProviders(<AppRoutes />, { route: '/profile' });
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Save name' }));
+    await openName();
+    await userEvent.click(screen.getByRole('button', { name: 'Save name' }));
 
     expect(await screen.findByText('Unexpected error. Please try again.')).toBeInTheDocument();
   });
@@ -70,10 +119,72 @@ describe('ProfilePage', () => {
     await waitFor(() => expect(saved).toContainEqual({ theme: 'dark' }));
     expect(document.documentElement).toHaveAttribute('data-mantine-color-scheme', 'dark');
 
-    await userEvent.click(screen.getByRole('combobox', { name: 'Language' }));
-    await userEvent.click(await screen.findByRole('option', { name: 'Galego' }));
+    await userEvent.click(screen.getByRole('radio', { name: 'Galego' }));
     await waitFor(() => expect(saved).toContainEqual({ language: 'gl' }));
     await waitFor(() => expect(i18n.resolvedLanguage).toBe('gl'));
+  });
+
+  it('saves a time zone picked from the list', async () => {
+    const saved = [];
+    server.use(
+      withSession(makeUser({ timezone: 'Europe/Madrid' })),
+      patchMe((body) => saved.push(body)),
+    );
+    renderWithProviders(<AppRoutes />, { route: '/profile' });
+
+    const zone = await screen.findByRole('button', { name: 'Time zone' });
+    expect(zone).toHaveTextContent(/^Europe\/Madrid \(UTC[+-]\d/);
+    await userEvent.click(zone);
+    const search = await screen.findByRole('textbox', { name: 'Search time zone' });
+    await waitFor(() => expect(search).toHaveFocus());
+    await userEvent.type(search, 'lisb');
+    expect(screen.getAllByRole('option')).toHaveLength(1);
+    await userEvent.click(screen.getByRole('option', { name: /^Europe\/Lisbon/ }));
+
+    await waitFor(() => expect(saved).toEqual([{ timezone: 'Europe/Lisbon' }]));
+  });
+
+  it('finds a time zone by its city name with spaces and says when none matches', async () => {
+    server.use(withSession());
+    renderWithProviders(<AppRoutes />, { route: '/profile' });
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Time zone' }));
+    const search = await screen.findByRole('textbox', { name: 'Search time zone' });
+    await userEvent.type(search, 'new_york');
+    expect(screen.getByRole('option', { name: /^America\/New York/ })).toBeInTheDocument();
+
+    await userEvent.clear(search);
+    await userEvent.type(search, 'atlantis');
+    expect(screen.getByText('No time zone matches.')).toBeInTheDocument();
+  });
+
+  it("offers the browser's time zone to an account still in UTC", async () => {
+    const saved = [];
+    const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const zone = detected === 'Europe/Oslo' ? 'Europe/Rome' : 'Europe/Oslo';
+    const resolvedOptions = vi
+      .spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions')
+      .mockReturnValue({ timeZone: zone });
+    server.use(
+      withSession(),
+      patchMe((body) => saved.push(body)),
+    );
+    renderWithProviders(<AppRoutes />, { route: '/profile' });
+
+    expect(await screen.findByText(`Your browser is in ${zone}.`)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Use it' }));
+
+    await waitFor(() => expect(saved).toEqual([{ timezone: zone }]));
+    expect(screen.queryByText(/Your browser is in/)).not.toBeInTheDocument();
+    resolvedOptions.mockRestore();
+  });
+
+  it('does not offer the browser time zone once one is chosen', async () => {
+    server.use(withSession(makeUser({ timezone: 'America/Lima' })));
+    renderWithProviders(<AppRoutes />, { route: '/profile' });
+
+    await screen.findByRole('button', { name: 'Time zone' });
+    expect(screen.queryByText(/Your browser is in/)).not.toBeInTheDocument();
   });
 
   it('changes the password of a password account and keeps the session', async () => {
@@ -90,10 +201,11 @@ describe('ProfilePage', () => {
     );
     renderWithProviders(<AppRoutes />, { route: '/profile' });
 
-    await userEvent.type(await screen.findByLabelText(/Current password/), 'old password!');
+    await openPassword('Change password');
+    await userEvent.type(screen.getByLabelText(/Current password/), 'old password!');
     await userEvent.type(screen.getByLabelText(/^New password/), 'a new long password');
     await userEvent.type(screen.getByLabelText(/Repeat the new password/), 'a new long password');
-    await userEvent.click(screen.getByRole('button', { name: 'Change password' }));
+    await submitPassword();
 
     await waitFor(() =>
       expect(body).toEqual({
@@ -102,49 +214,31 @@ describe('ProfilePage', () => {
       }),
     );
     expect(await screen.findByText(/Password saved/)).toBeInTheDocument();
-  });
-
-  it('lets a code account set a first password without the current one', async () => {
-    let body;
-    server.use(
-      withSession(),
-      http.post('/api/auth/change-password', async ({ request }) => {
-        body = await request.json();
-        return HttpResponse.json({
-          access_token: 'new',
-          user: makeUser({ auth_method: 'password' }),
-        });
-      }),
-    );
-    renderWithProviders(<AppRoutes />, { route: '/profile' });
-
-    expect(await screen.findByText(/You sign in with a code/)).toBeInTheDocument();
     expect(screen.queryByLabelText(/Current password/)).not.toBeInTheDocument();
-    await userEvent.type(screen.getByLabelText(/^New password/), 'a new long password');
-    await userEvent.type(screen.getByLabelText(/Repeat the new password/), 'a new long password');
-    await userEvent.click(screen.getByRole('button', { name: 'Set password' }));
-
-    await waitFor(() => expect(body).toEqual({ new_password: 'a new long password' }));
   });
 
   it('requires the first name and every password field', async () => {
     server.use(withSession(makeUser({ auth_method: 'password' })));
     renderWithProviders(<AppRoutes />, { route: '/profile' });
 
-    await userEvent.clear(await screen.findByLabelText(/First name/));
+    await openName();
+    await userEvent.clear(screen.getByLabelText(/First name/));
     await userEvent.click(screen.getByRole('button', { name: 'Save name' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Change password' }));
+    await openPassword('Change password');
+    await submitPassword();
 
     expect(await screen.findAllByText('Required')).toHaveLength(3);
   });
 
   it('checks the repeated password', async () => {
-    server.use(withSession());
+    server.use(withSession(makeUser({ auth_method: 'password' })));
     renderWithProviders(<AppRoutes />, { route: '/profile' });
 
-    await userEvent.type(await screen.findByLabelText(/^New password/), 'a new long password');
+    await openPassword('Change password');
+    await userEvent.type(screen.getByLabelText(/Current password/), 'old password!');
+    await userEvent.type(screen.getByLabelText(/^New password/), 'a new long password');
     await userEvent.type(screen.getByLabelText(/Repeat the new password/), 'another one!!');
-    await userEvent.click(screen.getByRole('button', { name: 'Set password' }));
+    await submitPassword();
 
     expect(await screen.findByText('The passwords do not match.')).toBeInTheDocument();
   });
@@ -160,15 +254,16 @@ describe('ProfilePage', () => {
     );
     renderWithProviders(<AppRoutes />, { route: '/profile' });
 
-    await userEvent.type(await screen.findByLabelText(/Current password/), 'old password!');
+    await openPassword('Change password');
+    await userEvent.type(screen.getByLabelText(/Current password/), 'old password!');
     await userEvent.type(screen.getByLabelText(/^New password/), 'a new long password');
     await userEvent.type(screen.getByLabelText(/Repeat the new password/), 'a new long password');
-    await userEvent.click(screen.getByRole('button', { name: 'Change password' }));
+    await submitPassword();
 
     expect(await screen.findByText(new RegExp(message))).toBeInTheDocument();
   });
 
-  it('logs out', async () => {
+  it('logs out from the top bar', async () => {
     server.use(
       withSession(),
       http.post('/api/auth/logout', () => new HttpResponse(null, { status: 204 })),

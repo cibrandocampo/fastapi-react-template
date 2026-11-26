@@ -20,6 +20,7 @@ export function makeUser(overrides = {}) {
     auth_method: 'otp',
     language: 'en',
     theme: 'system',
+    timezone: 'UTC',
     is_active: true,
     created_at: '2026-01-01T00:00:00Z',
     last_login_at: null,

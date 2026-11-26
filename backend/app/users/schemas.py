@@ -4,7 +4,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr
 
-from app.core.types import Name, OptionalName, Secret
+from app.core.types import Name, OptionalName, Secret, TimeZone
 from app.users.models import AuthMethod, Language, Role, Theme
 
 
@@ -19,6 +19,7 @@ class UserOut(BaseModel):
     auth_method: AuthMethod
     language: Language
     theme: Theme
+    timezone: str
     is_active: bool
     created_at: datetime
     last_login_at: datetime | None
@@ -31,6 +32,7 @@ class ProfileUpdate(BaseModel):
     last_name: Name | None = None
     language: Language | None = None
     theme: Theme | None = None
+    timezone: TimeZone | None = None
 
 
 class UserCreate(BaseModel):

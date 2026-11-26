@@ -1,16 +1,19 @@
-import { Anchor, AppShell, Container, Group } from '@mantine/core';
+import { ActionIcon, Anchor, AppShell, Container, Group, Tooltip } from '@mantine/core';
+import { LogOut } from 'lucide-react';
 import { Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Outlet } from 'react-router';
 
+import { useAuth } from '../auth/useAuth';
 import classes from './AppLayout.module.css';
 import { BrandMark } from './BrandMark';
-import { ColorSchemeMenu } from './ColorSchemeMenu';
-import { LanguageMenu } from './LanguageMenu';
 import { BottomNav } from './BottomNav';
 
+// Language and colour scheme live in the profile once signed in; the bar's right side holds the
+// account action (and whatever actions each app adds).
 export function AppLayout() {
   const { t } = useTranslation();
+  const { logout } = useAuth();
 
   return (
     <AppShell header={{ height: 56 }} padding={0}>
@@ -21,8 +24,16 @@ export function AppLayout() {
               <BrandMark />
             </Anchor>
             <Group gap="xs" wrap="nowrap">
-              <LanguageMenu />
-              <ColorSchemeMenu />
+              <Tooltip label={t('user.logout')}>
+                <ActionIcon
+                  variant="default"
+                  size="lg"
+                  aria-label={t('user.logout')}
+                  onClick={logout}
+                >
+                  <LogOut size={18} aria-hidden />
+                </ActionIcon>
+              </Tooltip>
             </Group>
           </Group>
         </Container>

@@ -3,19 +3,20 @@ import {
   Badge,
   Button,
   Group,
+  Menu,
   Pagination,
+  Popover,
   Select,
   Stack,
   Table,
   Text,
   TextInput,
   Title,
-  Tooltip,
   VisuallyHidden,
 } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { KeyRound, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { Ellipsis, KeyRound, ListFilter, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -29,8 +30,52 @@ import {
   useUpdateUser,
   useUsers,
 } from './usersApi';
+import classes from './UsersPage.module.css';
 
 const fullName = (user) => [user.first_name, user.last_name].filter(Boolean).join(' ');
+
+// Role and status filters: used now and then, so they open from one button that counts the active ones.
+function Filters({ role, active, onRole, onActive }) {
+  const { t } = useTranslation();
+  const count = [role, active].filter(Boolean).length;
+  // Inside the popover: a dropdown in a portal would count as a click outside and close it.
+  const inline = { withinPortal: false };
+
+  return (
+    <Popover position="bottom-start" shadow="md" trapFocus>
+      <Popover.Target>
+        <Button variant="default" leftSection={<ListFilter size={16} aria-hidden />}>
+          {count ? t('users.filters.active', { count }) : t('users.filters.open')}
+        </Button>
+      </Popover.Target>
+      <Popover.Dropdown>
+        <Stack gap="sm" w={220}>
+          <Select
+            label={t('users.role')}
+            placeholder={t('users.all')}
+            data={['none', 'user', 'admin'].map((value) => ({ value, label: t(`roles.${value}`) }))}
+            value={role}
+            onChange={onRole}
+            clearable
+            comboboxProps={inline}
+          />
+          <Select
+            label={t('users.status')}
+            placeholder={t('users.all')}
+            data={[
+              { value: 'true', label: t('users.activeState') },
+              { value: 'false', label: t('users.inactiveState') },
+            ]}
+            value={active}
+            onChange={onActive}
+            clearable
+            comboboxProps={inline}
+          />
+        </Stack>
+      </Popover.Dropdown>
+    </Popover>
+  );
+}
 
 export function UsersPage() {
   const { t } = useTranslation();
@@ -49,13 +94,15 @@ export function UsersPage() {
   const remove = useDeleteUser();
   const grant = useUpdateUser();
 
-  // Dialogs mount on open, so Mantine cannot return focus itself: put it back on the button that opened
-  // the dialog, or on "New user" when that row is gone (WCAG 2.4.3).
+  // Dialogs mount on open, so Mantine cannot return focus itself: put it back on the control that
+  // opened the dialog (the row's actions menu, or "New user"), or on "New user" when that row is gone
+  // (WCAG 2.4.3).
   const trigger = useRef(null);
   const createButton = useRef(null);
+  const rowMenu = useRef(null);
   const open = (kind, user) => {
     for (const mutation of [create, update, setPassword, remove]) mutation.reset();
-    trigger.current = document.activeElement;
+    trigger.current = kind === 'create' ? createButton.current : rowMenu.current;
     setDialog({ kind, user });
   };
   const close = () => {
@@ -89,37 +136,23 @@ export function UsersPage() {
         </Button>
       </Group>
 
-      <Group align="flex-end">
+      <Group gap="xs" wrap="nowrap">
         <TextInput
-          label={t('users.search')}
+          aria-label={t('users.search')}
+          placeholder={t('users.search')}
           leftSection={<Search size={16} aria-hidden />}
           value={search}
           onChange={(event) => {
             setSearch(event.currentTarget.value);
             setPage(1);
           }}
-          w={260}
+          className={classes.search}
         />
-        <Select
-          label={t('users.role')}
-          placeholder={t('users.all')}
-          data={['none', 'user', 'admin'].map((value) => ({ value, label: t(`roles.${value}`) }))}
-          value={role}
-          onChange={filters(setRole)}
-          clearable
-          w={180}
-        />
-        <Select
-          label={t('users.status')}
-          placeholder={t('users.all')}
-          data={[
-            { value: 'true', label: t('users.activeState') },
-            { value: 'false', label: t('users.inactiveState') },
-          ]}
-          value={active}
-          onChange={filters(setActive)}
-          clearable
-          w={180}
+        <Filters
+          role={role}
+          active={active}
+          onRole={filters(setRole)}
+          onActive={filters(setActive)}
         />
       </Group>
 
@@ -128,27 +161,29 @@ export function UsersPage() {
       {data && data.items.length === 0 ? (
         <Text c="dimmed">{t('users.empty')}</Text>
       ) : (
-        <Table.ScrollContainer minWidth={720}>
-          <Table verticalSpacing="sm" highlightOnHover>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>{t('users.name')}</Table.Th>
-                <Table.Th>{t('login.email')}</Table.Th>
-                <Table.Th>{t('users.role')}</Table.Th>
-                <Table.Th>{t('users.status')}</Table.Th>
-                <Table.Th>
-                  <VisuallyHidden>{t('users.actions')}</VisuallyHidden>
-                </Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {data?.items.map((user) => (
-                <Table.Tr key={user.id}>
-                  <Table.Td>{fullName(user) || <Text c="dimmed">—</Text>}</Table.Td>
-                  <Table.Td>{user.email}</Table.Td>
-                  <Table.Td>
+        <Table verticalSpacing="sm" highlightOnHover className={classes.table}>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>{t('users.name')}</Table.Th>
+              <Table.Th className={classes.role}>{t('users.role')}</Table.Th>
+              <Table.Th className={classes.actions}>
+                <VisuallyHidden>{t('users.actions')}</VisuallyHidden>
+              </Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {data?.items.map((user) => (
+              <Table.Tr key={user.id}>
+                <Table.Td className={classes.who}>
+                  <Text fw={500}>{fullName(user) || '—'}</Text>
+                  <Text size="sm" c="dimmed">
+                    {user.email}
+                  </Text>
+                </Table.Td>
+                <Table.Td>
+                  <Group gap="xs" className={classes.badges}>
                     {user.role === 'none' ? (
-                      <Group gap="xs" wrap="nowrap">
+                      <>
                         <Badge variant="light" color="red">
                           {t('roles.none')}
                         </Badge>
@@ -165,62 +200,65 @@ export function UsersPage() {
                         >
                           {t('users.grant')}
                         </Button>
-                      </Group>
+                      </>
                     ) : (
                       <Badge variant="light" color={user.role === 'admin' ? 'slate' : 'gray'}>
                         {t(`roles.${user.role}`)}
                       </Badge>
                     )}
-                  </Table.Td>
-                  <Table.Td>
-                    {user.is_active ? t('users.activeState') : t('users.inactiveState')}
-                  </Table.Td>
-                  <Table.Td>
-                    <Group gap={4} justify="flex-end" wrap="nowrap">
-                      <Tooltip label={t('users.edit.title')}>
-                        <ActionIcon
-                          size="lg"
-                          variant="subtle"
-                          aria-label={t('users.edit.label', { email: user.email })}
-                          onClick={() => open('edit', user)}
-                        >
-                          <Pencil size={16} aria-hidden />
-                        </ActionIcon>
-                      </Tooltip>
+                    {!user.is_active && (
+                      <Badge variant="outline" color="gray">
+                        {t('users.inactiveState')}
+                      </Badge>
+                    )}
+                  </Group>
+                </Table.Td>
+                <Table.Td className={classes.actions}>
+                  <Menu position="bottom-end">
+                    <Menu.Target>
+                      <ActionIcon
+                        variant="subtle"
+                        size="lg"
+                        aria-label={t('users.actionsFor', { email: user.email })}
+                        onClick={(event) => (rowMenu.current = event.currentTarget)}
+                      >
+                        <Ellipsis size={18} aria-hidden />
+                      </ActionIcon>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      <Menu.Item
+                        leftSection={<Pencil size={16} aria-hidden />}
+                        onClick={() => open('edit', user)}
+                      >
+                        {t('users.edit.title')}
+                      </Menu.Item>
                       {/* Your own password and account are managed from the profile: setting it
                           here would close all your sessions. */}
                       {user.id !== me.id && (
                         <>
-                          <Tooltip label={t('users.password.title')}>
-                            <ActionIcon
-                              size="lg"
-                              variant="subtle"
-                              aria-label={t('users.password.label', { email: user.email })}
-                              onClick={() => open('password', user)}
-                            >
-                              <KeyRound size={16} aria-hidden />
-                            </ActionIcon>
-                          </Tooltip>
-                          <Tooltip label={t('users.delete.title')}>
-                            <ActionIcon
-                              size="lg"
-                              variant="subtle"
-                              color="red"
-                              aria-label={t('users.delete.label', { email: user.email })}
-                              onClick={() => open('delete', user)}
-                            >
-                              <Trash2 size={16} aria-hidden />
-                            </ActionIcon>
-                          </Tooltip>
+                          <Menu.Item
+                            leftSection={<KeyRound size={16} aria-hidden />}
+                            onClick={() => open('password', user)}
+                          >
+                            {t('users.password.title')}
+                          </Menu.Item>
+                          <Menu.Divider />
+                          <Menu.Item
+                            color="red"
+                            leftSection={<Trash2 size={16} aria-hidden />}
+                            onClick={() => open('delete', user)}
+                          >
+                            {t('users.delete.title')}
+                          </Menu.Item>
                         </>
                       )}
-                    </Group>
-                  </Table.Td>
-                </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
-        </Table.ScrollContainer>
+                    </Menu.Dropdown>
+                  </Menu>
+                </Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
       )}
 
       {pages > 1 && (

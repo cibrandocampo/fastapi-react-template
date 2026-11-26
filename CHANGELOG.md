@@ -15,12 +15,16 @@ First release of the template.
   reuse detection; password lockout; per-address and per-account rate limits; disposable-email blocking
   with a weekly list sync.
 - Users administration API with search, filters, pagination and guards (last admin, self-delete).
+- Per-user language, colour scheme and IANA time zone (UTC until chosen), validated on the server.
 - Transactional emails in English, Spanish and Galician (text + HTML).
 - Error envelope with stable codes; security headers and CSP; no personal data in logs.
 
 ### Frontend
 - React 19, Vite 8, Mantine 9, TanStack Query, i18next (en / es / gl).
-- Sign-in, onboarding, waiting page, profile and users administration; bottom navigation.
+- Sign-in, onboarding, waiting page, profile and users administration; bottom navigation whose
+  highlight slides between tabs.
+- Progressive disclosure: rare actions open on demand (name and password in the profile, user actions
+  in a "⋯" menu, filters in a popover); every screen fits a phone without sideways scrolling.
 - Visual system from nudge's palette, light and dark, WCAG AA contrast, lucide icons.
 
 ### Operations

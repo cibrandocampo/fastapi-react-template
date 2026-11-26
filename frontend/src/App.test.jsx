@@ -31,13 +31,13 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: 'Welcome' })).toBeInTheDocument();
   });
 
-  it('switches the colour scheme and saves it in the profile', async () => {
+  it('switches the colour scheme and saves it in the profile (welcome step)', async () => {
     let saved;
     server.use(
-      withSession(),
+      withSession(makeUser({ first_name: '', last_name: '' })),
       http.patch('/api/auth/me', async ({ request }) => {
         saved = await request.json();
-        return HttpResponse.json(makeUser({ theme: saved.theme }));
+        return HttpResponse.json(makeUser({ first_name: '', last_name: '', theme: saved.theme }));
       }),
     );
     renderWithProviders(<AppRoutes />);

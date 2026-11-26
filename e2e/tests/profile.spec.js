@@ -36,8 +36,8 @@ test('the language is saved on the account', async ({ page, browser }) => {
   const email = await signedInUser(page, browser);
   await page.goto('/profile');
 
-  await page.getByRole('combobox', { name: 'Language' }).click();
-  await page.getByRole('option', { name: 'Español' }).click();
+  // The radio itself is visually hidden; people click its label.
+  await page.locator('label', { hasText: /^Español$/ }).click();
   await expect(page.getByRole('heading', { name: 'Perfil' })).toBeVisible();
 
   await page.reload();
@@ -63,17 +63,51 @@ test('the colour scheme is saved on the account', async ({ page, browser }) => {
   await other.context.close();
 });
 
-test('a code account sets a password and then signs in with it', async ({ page, browser }) => {
+test('the time zone is saved on the account', async ({ page, browser }) => {
   const email = await signedInUser(page, browser);
-  const password = 'e2e-new-password-1';
   await page.goto('/profile');
 
-  await page.getByRole('textbox', { name: 'New password', exact: true }).fill(password);
-  await page.getByRole('textbox', { name: 'Repeat the new password', exact: true }).fill(password);
-  await page.getByRole('button', { name: 'Set password' }).click();
+  const zone = page.getByRole('button', { name: 'Time zone' });
+  await zone.click();
+  await page.getByRole('textbox', { name: 'Search time zone' }).fill('Lisbon');
+  await page.getByRole('option', { name: /^Europe\/Lisbon/ }).click();
+  await expect(zone).toHaveText(/^Europe\/Lisbon/);
+
+  const other = await freshBrowserSignIn(browser, email);
+  await expect(other.page.getByRole('heading', { name: 'Welcome', exact: true })).toBeVisible();
+  await other.page.goto('/profile');
+  await expect(other.page.getByRole('button', { name: 'Time zone' })).toHaveText(/^Europe\/Lisbon/);
+  await other.context.close();
+});
+
+test('a password account changes its password and signs in with the new one', async ({
+  page,
+  browser,
+}) => {
+  const email = uniqueEmail('password');
+  const admin = await browser.newContext();
+  const adminPage = await admin.newPage();
+  await loginAsAdmin(adminPage);
+  await createUser(adminPage, { email, method: 'Password', password: 'e2e-first-password-1' });
+  await admin.close();
+  await loginWithPassword(page, email, 'e2e-first-password-1');
+  await expect(page.getByRole('heading', { name: 'Welcome', exact: true })).toBeVisible();
+  await page.goto('/profile');
+
+  // The key opens a dialog; its submit button has the same name as the key.
+  await page.getByRole('button', { name: 'Change password' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Change password' });
+  await dialog.getByRole('textbox', { name: 'Current password' }).fill('e2e-first-password-1');
+  await dialog
+    .getByRole('textbox', { name: 'New password', exact: true })
+    .fill('e2e-new-password-1');
+  await dialog
+    .getByRole('textbox', { name: 'Repeat the new password', exact: true })
+    .fill('e2e-new-password-1');
+  await dialog.getByRole('button', { name: 'Change password' }).click();
   await expect(page.getByText(/Password saved/)).toBeVisible();
   await logout(page);
 
-  await loginWithPassword(page, email, password);
+  await loginWithPassword(page, email, 'e2e-new-password-1');
   await expect(page.getByRole('heading', { name: 'Welcome', exact: true })).toBeVisible();
 });

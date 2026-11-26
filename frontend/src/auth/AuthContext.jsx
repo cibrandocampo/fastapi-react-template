@@ -15,7 +15,7 @@ export function AuthProvider({ children }) {
   const [status, setStatus] = useState('loading'); // loading | anonymous | authenticated
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { setColorScheme } = useMantineColorScheme();
+  const { colorScheme, setColorScheme } = useMantineColorScheme();
 
   const signIn = useCallback((session) => {
     setAccessToken(session.access_token);
@@ -48,12 +48,15 @@ export function AuthProvider({ children }) {
     });
   }, [navigate, signOut]);
 
-  // The user's saved preferences win over this browser's once they are known.
+  // The user's saved preferences win over this browser's once they are known. Only on a real
+  // change: Mantine's setColorScheme is a new function every render and each call switches off
+  // every CSS transition on the page for a moment (it would cut the navigation's animations).
   useEffect(() => {
     if (!user) return;
     if (i18n.resolvedLanguage !== user.language) i18n.changeLanguage(user.language);
-    setColorScheme(toColorScheme(user.theme));
-  }, [user, setColorScheme]);
+    const scheme = toColorScheme(user.theme);
+    if (colorScheme !== scheme) setColorScheme(scheme);
+  }, [user, colorScheme, setColorScheme]);
 
   const value = useMemo(() => {
     const loginStart = (email) => api('/auth/login/start', { method: 'POST', body: { email } });
