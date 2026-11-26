@@ -1,139 +1,92 @@
 ---
 name: dev-workflow
-description: Development commands and environment setup for this project. Customize this skill with the project's actual services and commands. All commands run inside Docker — never on the host.
+description: Development commands of this template — every make target and the compose commands behind them, services and ports, migrations, dependencies, the production image and the end-to-end stack. Everything runs inside Docker, never on the host.
 ---
 
 # Dev Workflow
 
-> **THIS SKILL HAS NOT BEEN FILLED IN.**
->
-> All commands below are placeholders (`<lint-command>`, `<test-command>`, etc.).
-> **Do not assume any service names, commands, or configuration.**
-> Before running any project command, ask the user:
-> - What services does this project have?
-> - What are the actual lint, test, build, and migration commands?
->
-> Fill in this skill before starting any development work. See README.md for instructions.
-
-## Project Layout
+## Layout
 
 ```
-project/
-  docker-compose.yml        # production (pre-built images, no bind mounts)
-  dev/
-    docker-compose.yml      # development (local builds, bind mounts)
-    Dockerfile.backend
-    Dockerfile.frontend
-  .env                      # shared by both compose files
-  .env.example
-  docs/
-  frontend/
-  backend/
+docker-compose.yml     production: app image + Postgres (deploy, or `make up` to try the image)
+Dockerfile             production image (API + built SPA)
+dev/                   docker-compose.yml (bind mounts, live reload) + Dockerfile.backend/.frontend
+e2e/                   docker-compose.yml (production image + Postgres + Mailpit + Playwright), specs
+backend/ frontend/     the code
+.env / .env.example    shared settings (.env is git-ignored); docs/configuration.md describes them
 ```
 
-**Always use `dev/docker-compose.yml` for development.** Never use the root `docker-compose.yml` locally — it is for production only.
-
-## Services
-
-> _Fill in: list the services defined in dev/docker-compose.yml. Dev ports follow the prefix-with-1 convention defined in CLAUDE.md §8._
-
-| Service | Description | Dev port | Internal port |
-|---------|-------------|----------|---------------|
-| `backend` | Backend API | `18000` | `8000` |
-| `frontend` | Frontend dev server | `15173` | `5173` |
-| `db` | Database | `15432` | `5432` |
-| `redis` | Cache / queue | `16379` | `6379` |
-| | _add more as needed_ | | |
-
-## Start / Stop
+## First time
 
 ```bash
-# Start all services
-docker compose -f dev/docker-compose.yml up -d
-
-# Stop all services
-docker compose -f dev/docker-compose.yml down
-
-# View logs
-docker compose -f dev/docker-compose.yml logs -f <service>
-
-# Restart a service (e.g. after changing a singleton or env var)
-docker compose -f dev/docker-compose.yml restart <service>
+make init        # copies .env.example to .env and starts the dev stack
+make hooks       # optional: pre-commit lint of staged files (needs the dev stack running)
 ```
 
-## Run Tests
+Sign in at http://localhost:15173 with `ADMIN_EMAIL` / `ADMIN_PASSWORD` from `.env`; codes arrive in
+Mailpit at http://localhost:18025.
 
-```bash
-# Backend
-docker compose -f dev/docker-compose.yml exec backend <test-command>
-# e.g.: pytest, python manage.py test, go test ./...
+## Services (dev, ports prefixed with 1)
 
-# Frontend
-docker compose -f dev/docker-compose.yml exec frontend <test-command>
-# e.g.: npx vitest run, npm test
+| Service | Port | Notes |
+|---|---|---|
+| `frontend` | 15173 | Vite, proxies `/api` to the backend |
+| `backend` | 18000 | uvicorn `--reload`, migrations applied on start; `/api/docs` |
+| `db` | 15432 | Postgres 17; `app` (dev) and `app_test` (tests) databases |
+| `mailpit` | 18025 (UI), 11025 (SMTP) | every email of the dev stack |
 
-# E2E
-# <e2e-command>
-# e.g.: docker run --rm --network host <e2e-image> npx playwright test
-```
+## Make targets
 
-## Lint & Format
+| Target | Does |
+|---|---|
+| `make help` | list the targets |
+| `make init` | `.env` from the example + `dev-up` |
+| `make dev-up` / `dev-down` / `dev-logs` / `dev-ps` | start (build, wait healthy) / stop / follow logs / list the dev stack |
+| `make test-backend` | pytest |
+| `make coverage-backend` | pytest with coverage, fails under 95 % |
+| `make lint-backend` / `format-backend` | ruff check + format check / ruff format + safe fixes |
+| `make test-frontend` | vitest with coverage, fails under the thresholds |
+| `make lint-frontend` / `format-frontend` | eslint + prettier check / prettier write |
+| `make build-frontend` | Vite production build |
+| `make lint-e2e` | Prettier check of `e2e/` |
+| `make test` / `make lint` / `make qa` | all unit tests / all linters / both (what CI checks before e2e) |
+| `make e2e` | end-to-end suite against the production image; report in `e2e/artifacts/report` |
+| `make db-migrate` | apply migrations to the dev database |
+| `make db-revision m="…"` | autogenerate a migration (read and fix it before committing) |
+| `make lock` | recompile `requirements*.txt` with hashes from the `.in` files |
+| `make hooks` | install the git pre-commit hook |
+| `make build` | production image as `$DOCKER_IMAGE:local` |
+| `make up` / `down` / `logs` / `pull` | the production compose (`APP_TAG=local make up` runs your build) |
 
-```bash
-# Backend
-docker compose -f dev/docker-compose.yml exec backend <lint-command>
-docker compose -f dev/docker-compose.yml exec backend <format-command>
+The Make targets wrap `docker compose --env-file .env -f dev/docker-compose.yml exec -T <service> …`
+for the dev stack, so the stack must be up for test/lint targets.
 
-# Frontend
-docker compose -f dev/docker-compose.yml exec frontend <lint-command>
-docker compose -f dev/docker-compose.yml exec frontend <format-command>
-```
+## Dependencies
 
-## Build
-
-```bash
-# Frontend production build (verify before pushing)
-docker compose -f dev/docker-compose.yml exec frontend <build-command>
-
-# Rebuild a service image after Dockerfile changes
-docker compose -f dev/docker-compose.yml build <service>
-```
-
-## Coverage
-
-```bash
-# Backend
-docker compose -f dev/docker-compose.yml exec backend <coverage-command>
-
-# Frontend
-docker compose -f dev/docker-compose.yml exec frontend <coverage-command>
-```
+- Backend: edit `backend/requirements.in` / `requirements-dev.in`, `make lock`, then
+  `docker compose … build backend && make dev-up`.
+- Frontend: `docker compose … exec -T frontend npm install <pkg>`, then
+  `docker compose … restart frontend`: a running Vite keeps its old pre-bundled deps and answers
+  504 "Outdated Optimize Dep" (blank page) until restarted.
+- E2E: `e2e/package.json` pins `@playwright/test` to the image version in `e2e/Dockerfile`; regenerate
+  the lockfile in Docker (`node:24-alpine npm install --package-lock-only`).
 
 ## Database
 
 ```bash
-# Run migrations
-docker compose -f dev/docker-compose.yml exec backend <migrate-command>
-
-# Open DB shell
-docker compose -f dev/docker-compose.yml exec db <db-shell-command>
-# e.g.: psql -U <user> <db>, mysql -u <user> -p
+make db-migrate
+make db-revision m="add devices"
+docker compose --env-file .env -f dev/docker-compose.yml exec db psql -U app -d app
 ```
 
-## Environment Variables
+## Docker group
 
-Both compose files share `.env` at the project root.
-- `docker-compose.yml` (prod): `env_file: .env`
-- `dev/docker-compose.yml` (dev): `env_file: ../.env`
+If `docker` says permission denied in a shell that has not picked up the `docker` group yet, wrap the
+command: `sg docker -c "…"`.
 
-Never commit `.env`. Commit `.env.example` with all keys but no secrets.
+## Host-allowed tools
 
-## Host-Allowed Tools
-
-The following tools may be run directly on the host (no Docker needed):
-
-- `docker` / `docker compose`
-- `git`
-- `gh` (GitHub CLI)
-
-Everything else goes through Docker. If an exception is needed, document it here with a justification.
+`docker` / `docker compose`, `git`, `gh`, `make`, `curl` for HTTP checks, and `openssl rand` to
+generate a secret. Everything else (python,
+node, npm, linters, Playwright, validators) runs in a container. If an exception is needed, document it
+here with the reason.

@@ -1,126 +1,52 @@
 ---
-description: Update documentation, commit, create PR, and verify CI pipeline
-argument-hint: <change description or task-id (optional)>
+description: Close the cycle — docs updated, commit, push, PR created or updated, CI green
+argument-hint: <change description or plan slug (optional)>
 ---
 
-# Push: $1
+# Push: $ARGUMENTS
 
-**Goal**: close the work cycle — documentation updated, clean commit, PR created, pipeline green.
-**Behaviour**: you are the last gate before code reaches review. Never commit with broken tests. Never ignore CI failures.
+**Goal**: the branch's work is documented, committed, pushed, in a PR, with CI green. The user merges.
 
----
+## 1 — State
 
-## Step 1 — Review Current State
+`git status`, `git diff --stat`, `git log main..HEAD --oneline`. Nothing to ship → say so and stop.
+On `main` with changes → create the right branch first (`git-conventions`).
 
-1. Run `git status` to see modified, added, and untracked files.
-2. Run `git diff --stat` to see a summary of changes.
-3. If `$1` references a task-id, read `docs/tasks/$1*.md` in full:
-   - Extract commit context (objective, modified files, design decisions).
-   - **Check for `## Code Review — APPROVED`**. If it is missing, warn the user:
-     > "This task has not been QA-approved. Run `/dev-4-qa $1` first, or confirm you want to push anyway."
-   - Do not proceed until the user confirms.
-4. If there is no `$1`, review modified files to understand what changed.
+If the branch belongs to a plan, read the plan and INDEX.md: every task must be `Completed` with
+QA `Approved`. Otherwise finish them (`/dev-3-run`) or tell the user what is missing.
 
-If there are no changes, inform the user and stop.
+## 2 — Docs
 
----
+Update what the change made stale, nothing more:
 
-## Step 2 — Update Documentation
+- `README.md` (features, getting started, deployment).
+- `docs/configuration.md` (new or changed environment variables), `.env.example`.
+- `MEMORY.md` (decisions and gotchas, per `memory-conventions`).
+- `CLAUDE.md` and `.claude/skills/*` if a convention or workflow changed.
+- Plan file: mark it implemented, note deviations from the original design.
 
-Skip this step entirely if the changes came from `/fix` and touched no structure, conventions, or configuration.
+## 3 — Verify
 
-Otherwise, review whether the changes require documentation updates:
+Unless every commit was QA-approved and nothing changed since, run the full suites and builds of
+the areas touched (`dev-workflow`). Red → fix first.
 
-### Documentation Checklist
+## 4 — Commit and push
 
-- [ ] **`docs/configuration.md`**: are there new environment variables? Did any existing one change?
-- [ ] **`README.md`**: do the changes affect installation or usage instructions?
-- [ ] **`CLAUDE.md`**: are there new patterns or conventions Claude should know?
-- [ ] **Skills (`.claude/skills/`)**: did any convention documented in a skill change?
-- [ ] **`docs/ARCHITECTURE.md`**: did the system architecture change?
+Remaining changes → commit per `git-conventions`. `git push -u origin <branch>`.
+Hook or push rejected → fix and make a new commit; never `--force`, never `--amend` a pushed commit.
 
-For each applicable item: read the current file, update with the new information, don't add unnecessary documentation.
+## 5 — PR
 
----
+No PR for the branch → `gh pr create --base main` with the body format from `git-conventions`.
+PR exists → it updates with the push; refresh its body if the summary changed
+(`gh api repos/{owner}/{repo}/pulls/<n> --method PATCH -f body=...`).
 
-## Step 3 — Pre-Commit Validation
+## 6 — CI
 
-**Skip this step if `$1` has `## Code Review — APPROVED`** — QA already ran the full suite.
+`gh pr checks <n> --watch`. Failure → `gh run view <id> --log-failed`, diagnose, fix locally,
+verify, new commit, push, watch again. Don't hand a red PR to the user.
 
-Otherwise, run the pre-commit sequence defined in the `git-conventions` skill. Do not proceed if any step fails.
+## 7 — Report (in the user's language)
 
----
-
-## Step 4 — Commit
-
-**Strictly apply the `git-conventions` skill** for format, rules, and pre-commit hook handling.
-
-```bash
-git add <specific files>
-git commit -m "$(cat <<'EOF'
-<type>: <subject>
-
-- bullet points
-EOF
-)"
-```
-
-If the pre-commit hook fails: fix, `git add`, new commit (never `--amend`).
-
----
-
-## Step 5 — Pull Request
-
-### Create Branch (if needed)
-
-If you are on `main`, create a descriptive branch:
-```bash
-git checkout -b <type>/<descriptive-name>
-```
-
-### Push
-
-```bash
-git push -u origin <branch>
-```
-
-**Never `push --force`.**
-
-### Create PR
-
-Invoke the `pr-create` skill — it will analyse the branch, build the PR body, and open the PR.
-
----
-
-## Step 6 — Verify CI
-
-Monitor the pipeline after the PR is created:
-
-```bash
-gh pr checks <pr-number> --watch
-```
-
-### If the Pipeline Fails
-
-1. Identify which job failed: `gh run view <run-id> --log-failed`
-2. Diagnose the error.
-3. Fix locally and verify it passes.
-4. Create a **new commit** (not amend) and push.
-5. Repeat until pipeline is green.
-
-### When the Pipeline Passes
-
-Inform the user with:
-- PR URL
-- Pipeline status (green)
-- Summary of what the PR includes
-
----
-
-## Unbreakable Rules
-
-- **`git-conventions` skill**: apply it for the pre-commit sequence, commit format, and pre-commit hook handling.
-- **Never `push --force`**: if there are conflicts, resolve with merge.
-- **Green pipeline**: do not consider it done until CI passes.
-- **If CI fails, fix it**: do not ignore it or ask the user to handle it manually.
-- **Commit and PR language**: always English.
+PR link, CI status, what it contains, and what the user must do: review and merge, plus any
+manual check.

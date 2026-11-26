@@ -1,0 +1,42 @@
+# Weekly dependency update PRs. Backend requirements are pip-compiled with hashes: when Dependabot
+# bumps requirements.in-pinned packages, regenerate the lock files with `make lock` on that branch.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /backend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      mantine:
+        patterns: ["@mantine/*"]
+      react:
+        patterns: ["react", "react-dom", "react-router"]
+      lint-and-test:
+        patterns: ["eslint*", "@eslint/*", "prettier", "vitest", "@vitest/*", "@testing-library/*"]
+
+  - package-ecosystem: npm
+    directory: /e2e
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directories: ["/", "/dev", "/e2e"]
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker-compose
+    directories: ["/", "/dev", "/e2e"]
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

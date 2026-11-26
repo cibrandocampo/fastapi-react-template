@@ -1,44 +1,35 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
+    "defaultMode": "acceptEdits",
     "allow": [
-      "Read(*)",
-      "Write(*)",
-      "Edit(*)",
-      "MultilineEdit(*)",
-      "Bash(mkdir *)",
-      "Bash(rm *)",
-      "Bash(mv *)",
-      "Bash(cp *)",
-      "Bash(touch *)",
-      "Bash(find *)",
-      "Bash(ls *)",
-      "Bash(cat *)",
-      "Bash(grep *)",
-      "Bash(docker *)",
-      "Bash(git status*)",
-      "Bash(git log*)",
-      "Bash(git diff*)",
-      "Bash(git add *)",
-      "Bash(git checkout *)",
-      "Bash(git branch*)",
-      "Bash(git stash*)",
-      "Bash(git fetch*)",
-      "Bash(git pull*)",
-      "Bash(gh pr list*)",
-      "Bash(gh pr view*)",
-      "Bash(gh pr checks*)",
-      "Bash(gh run *)"
+      "Bash",
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "WebFetch",
+      "WebSearch",
+      "Agent",
+      "Skill"
     ],
-    "ask": [
-      "Bash(git commit*)",
-      "Bash(git push*)",
-      "Bash(git reset*)",
-      "Bash(git rebase*)",
-      "Bash(gh pr create*)",
-      "Bash(gh pr edit*)",
-      "Bash(gh pr merge*)",
-      "Bash(gh pr close*)"
-    ],
-    "defaultMode": "dontAsk"
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git push --force-with-lease:*)",
+      "Bash(git push origin main:*)",
+      "Bash(git push origin HEAD:main:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(gh repo delete:*)",
+      "Bash(git push -u origin main:*)",
+      "Bash(git push --set-upstream origin main:*)",
+      "Bash(git push origin --delete:*)",
+      "Bash(git push --delete:*)",
+      "Bash(gh release delete:*)",
+      "Bash(gh api -X PUT:*)",
+      "Bash(gh api --method PUT:*)",
+      "Read(**/.env)"
+    ]
   }
 }

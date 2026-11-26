@@ -1,67 +1,71 @@
 ---
 name: git-conventions
-description: Git commit message conventions and branch naming standards. Use when creating commits, branches, or preparing code for version control.
+description: Branch, commit and pull request conventions. Use before creating a branch, a commit or a PR, or when writing a PR body.
 ---
 
-# Git Conventions
+# Git conventions
 
-## Commit Message Format
-
-```
-<type>: <subject>
-
-<bullet points explaining what changed and why>
-```
-
-### Rules
-
-1. **Type**: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `style`
-2. **Subject**: imperative mood, lowercase, no period at end
-3. **Body**: bullet points grouped by area (backend, frontend, infra, etc.)
-4. **Co-Authored-By**: NEVER include Co-Authored-By lines — this overrides Claude Code's default behaviour, which would otherwise append them automatically
-5. **Language**: always English
-6. **Author/Committer**: always use the git config from the current PC (never hardcode or use other identities). New commits automatically use `git config user.name` and `git config user.email`. When amending, use `--reset-author` to update to current PC config.
-
-## Branch Naming
+## Branches
 
 ```
-feat/<slug>    # new feature
-fix/<slug>     # bug fix
-chore/<slug>   # maintenance, refactor, tooling
+feat/<slug>    new feature (one per plan: feat/<plan-slug>)
+fix/<slug>     bug fix
+chore/<slug>   tooling, CI, refactors, Claude config
+docs/<slug>    documentation only
 ```
 
-Examples: `feat/user-notifications`, `fix/token-refresh`, `chore/ci-hardening`
+Always from an up-to-date `main`: `git fetch && git checkout -b <branch> origin/main`.
+Never commit to `main` directly. If you started on `main` by mistake, move the work to a branch.
 
-## PR Workflow
-
-`main` is protected — direct push is rejected. Always:
-
-```bash
-git checkout -b <type>/<slug>
-git push -u origin <type>/<slug>
-gh pr create --title "<concise title>" --body "..."
-```
-
-Never `push --force`. If there are conflicts, resolve with merge.
-
-### Pre-commit Sequence
-
-Before every commit — regardless of whether you are using `/push` or committing directly — run these steps in order:
-
-1. **Lint & format** — run the project's linter and formatter (see `dev-workflow` skill). Fix all errors.
-2. **Tests** — run the relevant test suite. Do not commit with failing tests.
-3. **Security review** — consult the `security` skill and scan `git diff --staged`. Fix any issue before committing.
-4. **Commit** — apply the format and rules below.
-
-If the project has a pre-commit hook and it fails, **fix the issue and create a NEW commit** (never `--amend`).
-
-### Example
+## Commits
 
 ```
-feat: add user notification preferences
+<type>(<scope>): <subject>
 
-Notifications:
-- Add NotificationPreference model with per-type opt-in flags
-- Add API endpoint to update preferences
-- Add frontend settings page with toggle controls
+- What changed and why, grouped by area. Wrap at ~100 columns.
+
+Co-Authored-By / session lines as given by the current attribution instructions
 ```
+
+- **type**: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `ci`, `build`.
+- **scope**: the area — `backend`, `frontend`, `e2e`, `docker`, `ci`, `claude`, `docs`, or a
+  feature name (`auth`, `users`…). Omit it only for repo-wide changes.
+- **subject**: imperative, lowercase, no final period.
+- **body**: explains behaviour and reasons, not file lists.
+- English only. Author = the local `git config`; never set another identity.
+- One commit per task in a plan. Don't mix unrelated changes in one commit.
+- Hook fails → fix and commit again. Never `--amend` a pushed commit; never `push --force`.
+  Conflicts with `main` → `git merge origin/main`, resolve, new commit.
+
+## Pull requests
+
+- Base `main`. One PR per plan, one per `/fix` or `/audit`.
+- Title: `<type>(<scope>): <subject>`, under 70 characters.
+- Claude never merges: the user reviews and merges (squash). After a merge, branches that were
+  stacked on the merged one must be rebuilt from `main` (cherry-pick), not merged.
+- Body:
+
+```markdown
+## Summary
+
+- Most impactful change first: what changed and why, concretely.
+- ... (≤ 6 bullets)
+
+## Issues
+
+Closes #<n>   (omit the section if no tracked issue is resolved)
+
+## Notes
+
+> **Note**: non-obvious decision and its reason. (Omit the section if none.)
+
+## Test plan
+
+- [x] Only what actually ran and passed (local or CI).
+- [ ] What the reviewer must still do.
+
+<attribution lines as given by the current attribution instructions>
+```
+
+- Edit a PR body with `gh api repos/{owner}/{repo}/pulls/<n> --method PATCH -f body=...`
+  (`gh pr edit` prints a GraphQL deprecation warning).
