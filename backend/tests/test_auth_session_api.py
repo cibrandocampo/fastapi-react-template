@@ -122,6 +122,17 @@ async def test_profile_update_changes_name_language_theme_and_timezone(client, m
     assert body["timezone"] == "Europe/Madrid"
 
 
+@pytest.mark.parametrize("zone", ["Asia/Kolkata", "Asia/Calcutta", "Europe/Kiev", "UTC"])
+async def test_profile_update_accepts_the_zone_names_browsers_report(client, make_user, zone):
+    # Browsers still report some zones by their old IANA names; the server must accept them all.
+    token = await _login(client, make_user)
+
+    response = await client.patch("/api/auth/me", headers=auth(token), json={"timezone": zone})
+
+    assert response.status_code == 200
+    assert response.json()["timezone"] == zone
+
+
 @pytest.mark.parametrize(
     "payload",
     [

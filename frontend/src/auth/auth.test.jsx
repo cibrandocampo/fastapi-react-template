@@ -149,6 +149,22 @@ describe('preferences menus', () => {
     await waitFor(() => expect(saved).toEqual({ theme: 'system' }));
   });
 
+  it('keeps the chosen colour scheme and language while they are being saved', async () => {
+    server.use(
+      withSession(newUser()),
+      http.patch('/api/auth/me', () => new Promise(() => {})),
+    );
+    renderWithProviders(<AppRoutes />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Colour scheme' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Dark' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Language' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Galego' }));
+
+    expect(await screen.findByRole('heading', { name: 'Dámosche a benvida!' })).toBeInTheDocument();
+    expect(document.documentElement).toHaveAttribute('data-mantine-color-scheme', 'dark');
+  });
+
   it('changes the language for a visitor without saving it anywhere', async () => {
     renderWithProviders(<AppRoutes />, { route: '/login' });
 

@@ -4,6 +4,7 @@ PostgreSQL text cannot hold the NUL character: every user-supplied string goes t
 types so a NUL is a 422 at the boundary instead of a database error.
 """
 
+import functools
 import zoneinfo
 from typing import Annotated
 
@@ -28,8 +29,15 @@ Code = Annotated[str, StringConstraints(max_length=12, pattern=NO_NUL)]
 IdPath = Annotated[int, Path(ge=1, le=MAX_DB_INT)]
 
 
+@functools.cache
+def _time_zones() -> frozenset[str]:
+    # The system database plus the `tzdata` package (legacy names included); read once, it walks
+    # the disk.
+    return frozenset(zoneinfo.available_timezones())
+
+
 def _known_time_zone(value: str) -> str:
-    if value not in zoneinfo.available_timezones():
+    if value not in _time_zones():
         raise ValueError("unknown IANA time zone")
     return value
 

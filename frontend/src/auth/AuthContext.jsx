@@ -1,6 +1,6 @@
 import { useMantineColorScheme } from '@mantine/core';
 import { useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { api, onSessionEnd, refreshSession, setAccessToken } from '../api/client';
@@ -48,15 +48,25 @@ export function AuthProvider({ children }) {
     });
   }, [navigate, signOut]);
 
-  // The user's saved preferences win over this browser's once they are known. Only on a real
-  // change: Mantine's setColorScheme is a new function every render and each call switches off
-  // every CSS transition on the page for a moment (it would cut the navigation's animations).
-  useEffect(() => {
-    if (!user) return;
-    if (i18n.resolvedLanguage !== user.language) i18n.changeLanguage(user.language);
-    const scheme = toColorScheme(user.theme);
+  // The user's saved preferences win over this browser's once they are known, and again whenever
+  // the saved value changes. Keyed on the saved values only: a choice made in a menu applies at once
+  // and must not be undone while it is being saved. The scheme is set only on a real change, since
+  // each setColorScheme call switches off every CSS transition for a moment (it would cut the
+  // navigation's animations); setColorScheme is a new function every render, hence the effect event.
+  const language = user?.language;
+  const theme = user?.theme;
+  const applyTheme = useEffectEvent((saved) => {
+    const scheme = toColorScheme(saved);
     if (colorScheme !== scheme) setColorScheme(scheme);
-  }, [user, colorScheme, setColorScheme]);
+  });
+
+  useEffect(() => {
+    if (language && i18n.resolvedLanguage !== language) i18n.changeLanguage(language);
+  }, [language]);
+
+  useEffect(() => {
+    if (theme) applyTheme(theme);
+  }, [theme]);
 
   const value = useMemo(() => {
     const loginStart = (email) => api('/auth/login/start', { method: 'POST', body: { email } });
