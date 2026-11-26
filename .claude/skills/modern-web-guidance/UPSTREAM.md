@@ -11,4 +11,4 @@
 
 To update: clone upstream, review the diff of `skills/modern-web-guidance/` (it becomes agent instructions),
 copy `guides/`, regenerate `guides/INDEX.md`, re-apply the SKILL.md changes, check the npm version upstream's commands expect (`docker run --rm
-node:24-alpine npm view modern-web-guidance version`) and update the pin and the commit above.
+node:26-alpine npm view modern-web-guidance version`) and update the pin and the commit above.

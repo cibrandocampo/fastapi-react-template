@@ -25,7 +25,7 @@ audit (advisory, continue-on-error)
 | `backend` | builds the dev backend; `ruff check` + `ruff format --check`; pytest with coverage against Postgres + Mailpit (`run --rm backend`, deps start healthy) | `make lint-backend coverage-backend` |
 | `frontend` | eslint, prettier, vitest with coverage, production build; Prettier check of `e2e/` | `make lint-frontend test-frontend build-frontend lint-e2e` |
 | `audit` | `pip-audit` on `requirements.txt`, `npm audit --omit=dev --audit-level=high`; never blocks | — |
-| `e2e` | `make e2e`; uploads `e2e/artifacts/` on failure (14 days) | `make e2e` |
+| `e2e` | starts the production `db` from `docker-compose.yml` with data on disk (catches a Postgres bump that breaks the deploy volume); `make e2e`; uploads `e2e/artifacts/` on failure (14 days) | `make e2e` |
 | `image` | buildx with `APP_VERSION=$(git describe --tags --always)`; push or build only (below) | `make build` |
 
 Notes: the runner's uid differs from the image users — the backend job passes `HOST_UID`/`HOST_GID`,
@@ -53,7 +53,8 @@ Pushes only when **all** hold: secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN
 - `sync-disposable-email-domains.yml` (Sundays, manual too): refreshes the blocked-domain list and opens
   a PR when it changed.
 - `dependabot.yml`: weekly PRs for pip (then run `make lock` on the branch: requirements are hashed),
-  npm (frontend, e2e), Dockerfiles, compose images and actions. Bump the Playwright image in
+  npm (frontend, e2e), Dockerfiles, compose images (one grouped PR across `/`, `dev/`, `e2e/`) and
+  actions; ESLint majors are held until eslint-plugin-jsx-a11y supports them. Bump the Playwright image in
   `e2e/Dockerfile` together with `@playwright/test`.
 
 ## Changing workflows

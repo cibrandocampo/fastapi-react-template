@@ -32,7 +32,7 @@ Mailpit at http://localhost:18025.
 |---|---|---|
 | `frontend` | 15173 | Vite, proxies `/api` to the backend |
 | `backend` | 18000 | uvicorn `--reload`, migrations applied on start; `/api/docs` |
-| `db` | 15432 | Postgres 17; `app` (dev) and `app_test` (tests) databases |
+| `db` | 15432 | Postgres 18; `app` (dev) and `app_test` (tests) databases |
 | `mailpit` | 18025 (UI), 11025 (SMTP) | every email of the dev stack |
 
 ## Make targets
@@ -69,7 +69,7 @@ for the dev stack, so the stack must be up for test/lint targets.
   `docker compose … restart frontend`: a running Vite keeps its old pre-bundled deps and answers
   504 "Outdated Optimize Dep" (blank page) until restarted.
 - E2E: `e2e/package.json` pins `@playwright/test` to the image version in `e2e/Dockerfile`; regenerate
-  the lockfile in Docker (`node:24-alpine npm install --package-lock-only`).
+  the lockfile in Docker (`node:26-alpine npm install --package-lock-only`).
 
 ## Database
 

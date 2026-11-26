@@ -20,7 +20,7 @@ Run `modern-web-guidance` with `npx` **inside a throwaway Docker container** (se
 - **Example**: Search `"light dismiss dialog"` or `"responsive data table"`, **not** `"dialog"` (too terse), `"responsive table dark mode"` (compound — split into two searches), or `"close React settings modal on outside click"` (framework/app noise).
 
 ```sh
-docker run --rm -v mwg-npm-cache:/root/.npm -v "${TMPDIR:-/tmp}/mwg:/out" -e TMPDIR=/out -e NPM_CONFIG_UPDATE_NOTIFIER=false -w /out node:24-alpine npx -y modern-web-guidance@1.0.2 search "<query>" --skill-version 2026_11_16-268fb9ea
+docker run --rm -v mwg-npm-cache:/root/.npm -v "${TMPDIR:-/tmp}/mwg:/out" -e TMPDIR=/out -e NPM_CONFIG_UPDATE_NOTIFIER=false -w /out node:26-alpine npx -y modern-web-guidance@1.0.2 search "<query>" --skill-version 2026_11_16-268fb9ea
 ```
 
 > **Note**: Returns `[{ "id", "description" }, ...]`. Judge results by their `description` fields:
@@ -33,7 +33,7 @@ docker run --rm -v mwg-npm-cache:/root/.npm -v "${TMPDIR:-/tmp}/mwg:/out" -e TMP
 Once you have relevant `id`(s) from the search results, call `retrieve` to get the full guide(s)—including both specific use-case guides that match your task and any broader discipline guide (e.g., `html`, `css`, `js`, `forms`, `accessibility`, `color`, `performance`, `security`) that applies. You can pass multiple IDs separated by commas.
 
 ```sh
-docker run --rm -v mwg-npm-cache:/root/.npm -v "${TMPDIR:-/tmp}/mwg:/out" -e TMPDIR=/out -e NPM_CONFIG_UPDATE_NOTIFIER=false -w /out node:24-alpine npx -y modern-web-guidance@1.0.2 retrieve "<id>"
+docker run --rm -v mwg-npm-cache:/root/.npm -v "${TMPDIR:-/tmp}/mwg:/out" -e TMPDIR=/out -e NPM_CONFIG_UPDATE_NOTIFIER=false -w /out node:26-alpine npx -y modern-web-guidance@1.0.2 retrieve "<id>"
 ```
 
 If `retrieve` saves large output (> 9.5 KB) to a temporary file to prevent truncation, the path it prints is inside the container (`/out/...`): read the same file on the host at `${TMPDIR:-/tmp}/mwg/...` in full using your file-reading tool (reading remaining line ranges if needed)—do not use `cat` or `head`.
@@ -60,7 +60,7 @@ When you consult `modern-web-guidance` for a task, end the response where you de
 > **Note**: `legacy-scan` scans for a curated subset (~20% of the guidance corpus).
 
 ```sh
-docker run --rm -v mwg-npm-cache:/root/.npm -v "$PWD:/repo:ro" -e NPM_CONFIG_UPDATE_NOTIFIER=false -w /repo node:24-alpine npx -y modern-web-guidance@1.0.2 legacy-scan <path> --json
+docker run --rm -v mwg-npm-cache:/root/.npm -v "$PWD:/repo:ro" -e NPM_CONFIG_UPDATE_NOTIFIER=false -w /repo node:26-alpine npx -y modern-web-guidance@1.0.2 legacy-scan <path> --json
 ```
 
 1. Scan: Run `legacy-scan <path> --json` to detect legacy web platform patterns across the project or directory.
@@ -72,7 +72,7 @@ docker run --rm -v mwg-npm-cache:/root/.npm -v "$PWD:/repo:ro" -e NPM_CONFIG_UPD
 ## Running in Docker
 
 This project never runs tools on the host. Every `modern-web-guidance` command above runs `npx` inside a
-throwaway `node:24-alpine` container (upstream runs `npx -y modern-web-guidance@latest` on the host):
+throwaway `node:26-alpine` container (upstream runs `npx -y modern-web-guidance@latest` on the host):
 
 - **Pinned version**: `modern-web-guidance@1.0.2`, not `@latest`: a new release is adopted deliberately (see
   `UPSTREAM.md`), never fetched silently. Keep `--skill-version` as upstream's SKILL.md states it.

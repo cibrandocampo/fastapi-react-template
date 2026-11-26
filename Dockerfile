@@ -2,7 +2,7 @@
 # Postgres). Build with `make build`; CI publishes it (T012).
 
 # --- Frontend build ---------------------------------------------------------------------------
-FROM node:24-alpine AS frontend
+FROM node:26-alpine AS frontend
 ENV NPM_CONFIG_UPDATE_NOTIFIER=false NPM_CONFIG_FUND=false NPM_CONFIG_AUDIT=false
 WORKDIR /build
 COPY frontend/package.json frontend/package-lock.json ./

@@ -78,7 +78,7 @@ jobs:
       - name: End-to-end specs format
         run: >-
           docker run --rm -e HOME=/tmp -e NPM_CONFIG_UPDATE_NOTIFIER=false
-          -v "$PWD:/repo" -w /repo node:24-alpine
+          -v "$PWD:/repo" -w /repo node:26-alpine
           npx -y prettier@3.10.1 --config frontend/.prettierrc.json --check
           'e2e/**/*.{js,json}' '!e2e/package-lock.json'
 
@@ -98,7 +98,7 @@ jobs:
 
       - name: JavaScript (npm audit)
         run: >-
-          docker run --rm -v "$PWD/frontend:/app:ro" -w /app node:24-alpine
+          docker run --rm -v "$PWD/frontend:/app:ro" -w /app node:26-alpine
           npm audit --omit=dev --audit-level=high
 
   e2e:
@@ -107,6 +107,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+
+      - name: Production database starts (docker-compose.yml, data on disk)
+        # The suite runs its own compose file; this catches a Postgres bump that breaks the deploy's
+        # volume (18 moved its data directory).
+        run: |
+          cp .env.example .env
+          export DATA_PATH="$RUNNER_TEMP/data"
+          docker compose up -d --wait db
+          test -n "$(sudo ls "$DATA_PATH/postgres")"
+          docker compose down
 
       - name: Run the suite (production image, Postgres, Mailpit, Playwright)
         run: make e2e

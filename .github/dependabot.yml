@@ -1,5 +1,8 @@
 # Weekly dependency update PRs. Backend requirements are pip-compiled with hashes: when Dependabot
 # bumps requirements.in-pinned packages, regenerate the lock files with `make lock` on that branch.
+# Images used in several directories come in one PR (a group spans the directories), so a version
+# never lands in production without dev and the end-to-end stack. A major Postgres bump needs the
+# dump and restore in docs/configuration.md on existing deployments.
 version: 2
 updates:
   - package-ecosystem: pip
@@ -13,6 +16,12 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      # eslint-plugin-jsx-a11y 6.x accepts ESLint ≤ 9; drop this once it supports 10.
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@eslint/js"
+        update-types: ["version-update:semver-major"]
     groups:
       mantine:
         patterns: ["@mantine/*"]
@@ -30,11 +39,17 @@ updates:
     directories: ["/", "/dev", "/e2e"]
     schedule:
       interval: weekly
+    groups:
+      images:
+        patterns: ["*"]
 
   - package-ecosystem: docker-compose
     directories: ["/", "/dev", "/e2e"]
     schedule:
       interval: weekly
+    groups:
+      services:
+        patterns: ["*"]
 
   - package-ecosystem: github-actions
     directory: /
