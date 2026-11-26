@@ -232,8 +232,8 @@ export function UsersPage() {
                       >
                         {t('users.edit.title')}
                       </Menu.Item>
-                      {/* Your own password and account are managed from the profile: setting it
-                          here would close all your sessions. */}
+                      {/* Your own account is managed from the profile; setting your password here
+                          would close all your sessions. */}
                       {user.id !== me.id && (
                         <>
                           <Menu.Item

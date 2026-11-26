@@ -17,8 +17,8 @@ Plan: [docs/plans/template-base.md](../plans/template-base.md) · Branch: `feat/
 | T009 | Profile and users admin pages | T006, T015 | Completed | Approved |
 | T010 | Production image and deployment files | T009 | Completed | Approved |
 | T011 | End-to-end tests | T010 | Completed | Approved |
-| T012 | Continuous integration | T011 | Completed | — |
-| T013 | Stack skills and documentation | T012 | Completed | Returned (B1) |
+| T012 | Continuous integration | T011 | Completed | Approved |
+| T013 | Stack skills and documentation | T012 | Completed | Approved |
 | T014 | Absorb dotclaude (retired by the user) | T013 | Completed | Approved |
 
 Status: `Pending` → `In progress` → `Completed`. QA: `—` → `Approved` / `Returned (B1…)`.

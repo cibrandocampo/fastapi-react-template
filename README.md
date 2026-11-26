@@ -18,7 +18,8 @@ Dark mode follows the system or the user's choice: ![Users page, dark](docs/scre
 - Optional self sign-up (`ALLOW_SELF_SIGNUP`): new accounts wait until an administrator grants access.
 - Roles `none` / `user` / `admin`; an administration page to search, create, edit, deactivate, set
   passwords and delete users, with guards (the last administrator stays, you cannot delete yourself).
-- Profile: name, language, colour scheme (saved on the account), set or change the password.
+- Profile: name, language, colour scheme and time zone (saved on the account); password accounts change
+  their password there, code accounts have none to manage.
 - Sessions: short-lived access token in memory, rotating refresh token in an HttpOnly cookie, reuse
   detection, password lockout, rate limits, disposable-email blocking, first admin from the environment.
 
