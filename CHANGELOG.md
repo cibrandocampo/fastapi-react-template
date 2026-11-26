@@ -8,7 +8,7 @@ a published GitHub release `vX.Y.Z` publishes the image tags `X.Y.Z` and `stable
 First release of the template.
 
 ### Backend
-- FastAPI + SQLAlchemy (async) + PostgreSQL 17 with Alembic migrations.
+- FastAPI + SQLAlchemy (async) + PostgreSQL 18 with Alembic migrations.
 - Sign-in with an emailed one-time code or a password; optional self sign-up with accounts waiting for
   access; roles `none` / `user` / `admin`; first administrator from `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
 - Sessions: 15-minute access tokens, rotating refresh tokens in an HttpOnly SameSite=Strict cookie with

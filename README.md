@@ -30,7 +30,7 @@ Dark mode follows the system or the user's choice: ![Users page, dark](docs/scre
 **Production**
 - One non-root, read-only image serving the API and the SPA, with security headers (CSP without inline
   scripts), a secret-key guard, migrations on start and a health check.
-- `docker-compose.yml` with PostgreSQL 17 for Synology Container Manager or any Docker host.
+- `docker-compose.yml` with PostgreSQL 18 for Synology Container Manager or any Docker host.
 
 **Quality**
 - Backend tests against a real PostgreSQL and frontend tests (both ≈100 % coverage), a Playwright

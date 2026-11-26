@@ -76,7 +76,7 @@ test: coverage-backend test-frontend ## All unit tests
 
 lint-e2e: ## Format check of the end-to-end specs (frontend Prettier config)
 	docker run --rm -u $(HOST_UID):$(HOST_GID) -e HOME=/tmp -e NPM_CONFIG_UPDATE_NOTIFIER=false \
-	  -v "$(CURDIR):/repo" -w /repo node:24-alpine \
+	  -v "$(CURDIR):/repo" -w /repo node:26-alpine \
 	  npx -y prettier@3.10.1 --config frontend/.prettierrc.json --check 'e2e/**/*.{js,json}' '!e2e/package-lock.json'
 
 lint: lint-backend lint-frontend lint-e2e ## All linters

@@ -128,3 +128,10 @@ docker compose up -d
 
 On Synology, Hyper Backup of the `DATA_PATH` folder is only consistent with the stack stopped; prefer
 scheduled dumps (Task Scheduler running the first command).
+
+## Upgrading PostgreSQL to a new major version
+
+The image keeps each major version's files apart (`$DATA_PATH/postgres/18/docker`), and a new major
+cannot open an older one's files. Upgrading (say 18 → 19) is a dump and restore: take a dump as above,
+stop the stack, move `$DATA_PATH/postgres` aside, change the `db` image, then restore into the fresh
+stack as above. Keep the old folder until the app works on the new one.

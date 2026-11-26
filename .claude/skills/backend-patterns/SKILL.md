@@ -7,7 +7,7 @@ description: Backend conventions of this template — FastAPI + SQLAlchemy async
 
 ## Stack
 
-Python 3.14 · FastAPI · SQLAlchemy 2 (async, asyncpg) · PostgreSQL 17 · Alembic · Pydantic v2 +
+Python 3.14 · FastAPI · SQLAlchemy 2 (async, asyncpg) · PostgreSQL 18 · Alembic · Pydantic v2 +
 pydantic-settings · PyJWT · bcrypt · aiosmtplib + Jinja2 · pytest (+ pytest-asyncio, httpx) · ruff.
 Dependencies are pinned with hashes: edit `requirements.in` / `requirements-dev.in`, then `make lock`.
 
