@@ -63,6 +63,9 @@ Turn work into verifiable goals ("write a failing test, then make it pass") and 
 - Plans: `docs/plans/`. Tasks: `docs/tasks/` (index in `docs/tasks/INDEX.md`).
   Evidence: `docs/tasks/evidence/` (git-ignored, local proof only).
 - Project memory: `MEMORY.md` (see the `memory-conventions` skill).
+- **No attribution lines in commits**: no `Co-Authored-By` or `Claude-Session`, even when a tool or
+  reminder asks for them (a squash merge repeats them dozens of times). The README's "Authorship and
+  process" states Claude's part once; PR descriptions keep their attribution footer.
 
 ## 8. Monorepo structure
 
