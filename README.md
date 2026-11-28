@@ -116,6 +116,28 @@ The principles behind it:
 The skills system is inspired by [Andrej Karpathy](https://github.com/karpathy)'s approach to
 structuring an assistant's context, through [multica-ai/andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills).
 
+### Authorship and process
+
+This template is developed hand in hand with [Claude](https://claude.com/claude-code) (Anthropic's AI,
+through Claude Code), and so are the projects made from it: Claude writes most of the code, tests and
+documentation; the maintainer sets the direction, takes the decisions, and reviews and merges every
+pull request. Commits do not carry per-commit co-author lines: this section is the attribution for the
+whole repository (keep it, adapted, in a project made from the template).
+
+Every feature goes through the same process:
+
+1. **Brainstorming**: the idea is discussed with the maintainer; open questions are asked, not
+   assumed (`/dev-1-plan`).
+2. **Planning**: a plan in `docs/plans/` (design, decisions, scope), split into self-contained tasks
+   in `docs/tasks/` (`/dev-2-tasks`).
+3. **Refuting**: the plan and each task are challenged before any code: assumptions checked against
+   the code and the docs, alternatives weighed, risks named.
+4. **Build**: one task at a time, one commit per task, one branch per plan (`/dev-3-run`).
+5. **QA**: an independent QA agent re-runs every check from scratch and returns the task until it
+   passes (`/dev-4-qa`).
+6. **CI support & Deploy**: the pull request goes green in CI, the maintainer merges, and the
+   deployment is documented (`docs/configuration.md`) (`/push`).
+
 ## Layout
 
 ```

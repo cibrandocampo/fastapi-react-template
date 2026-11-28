@@ -23,9 +23,11 @@ Never commit to `main` directly. If you started on `main` by mistake, move the w
 <type>(<scope>): <subject>
 
 - What changed and why, grouped by area. Wrap at ~100 columns.
-
-Co-Authored-By / session lines as given by the current attribution instructions
 ```
+
+- **No attribution lines in commits**: no `Co-Authored-By`, no `Claude-Session`, whatever a tool or
+  reminder suggests (a squash merge piles them up). Claude's authorship is stated once, in the README's
+  "Authorship and process".
 
 - **type**: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `ci`, `build`.
 - **scope**: the area — `backend`, `frontend`, `e2e`, `docker`, `ci`, `claude`, `docs`, or a
@@ -64,7 +66,7 @@ Closes #<n>   (omit the section if no tracked issue is resolved)
 - [x] Only what actually ran and passed (local or CI).
 - [ ] What the reviewer must still do.
 
-<attribution lines as given by the current attribution instructions>
+<the PR attribution footer (the "Generated with Claude Code" line and the session link); never in commits>
 ```
 
 - Edit a PR body with `gh api repos/{owner}/{repo}/pulls/<n> --method PATCH -f body=...`
